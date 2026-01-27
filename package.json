@@ -1,0 +1,37 @@
+{
+  "name": "knotic_sense",
+  "version": "1.0.0",
+  "description": "AI-powered job application CRM. Features ATS-aware resume scoring, job lifecycle tracking, and semantic match analysis. Built with MERN.",
+  "homepage": "https://github.com/Hamdayrabby/knotic_Sense#readme",
+  "bugs": {
+    "url": "https://github.com/Hamdayrabby/knotic_Sense/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hamdayrabby/knotic_Sense.git"
+  },
+  "license": "ISC",
+  "author": "Hamday_Rabby_Hossain",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "express-fileupload": "^1.5.2",
+    "express-rate-limit": "^8.2.1",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.1.5",
+    "nodemailer": "^7.0.12",
+    "nodemon": "^3.1.11"
+  }
+}
