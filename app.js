@@ -8,7 +8,10 @@ const cookieParser = require('cookie-parser');
 const connectDB = require('./server/Config/db');
 
 // Import routes
+// Import routes
 const authRoutes = require('./server/Routes/authRoutes');
+const jobRoutes = require('./server/Routes/jobRoutes');
+const resumeRoutes = require('./server/Routes/resumeRoutes');
 
 // Initialize Express app
 const app = express();
@@ -42,6 +45,8 @@ if (process.env.NODE_ENV === 'development') {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/jobs', jobRoutes);
+app.use('/api/resume', resumeRoutes);
 
 // Health check route
 app.get('/api/health', (req, res) => {
