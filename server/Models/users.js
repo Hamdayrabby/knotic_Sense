@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     enum: ['user', 'admin'],
     default: 'user'
+  },
+  resumeStructured: {
+    type: Object,
+    default: null
   }
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt

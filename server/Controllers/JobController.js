@@ -177,10 +177,94 @@ const updateJobStatus = async (req, res) => {
         });
     }
 };
+// @desc    Analyze job match with resume
+// @route   POST /api/jobs/:id/analyze
+// @access  Private
+const analyzeJob = async (req, res) => {
+    try {
+        const { matchResumeToJob } = require('../Utils/jobMatcher');
+        const User = require('../Models/users');
+
+        const job = await Job.findById(req.params.id);
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found'
+            });
+        }
+
+        // Check ownership
+        if (job.user.toString() !== req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'Not authorized to analyze this job'
+            });
+        }
+
+        // Check for job description
+        if (!job.jobDescription) {
+            return res.status(400).json({
+                success: false,
+                message: 'Job description is required for analysis. Update the job with a jobDescription first.'
+            });
+        }
+
+        // Get user's resume from profile
+        const user = await User.findById(req.user.id);
+        if (!user.resumeStructured) {
+            return res.status(400).json({
+                success: false,
+                message: 'No resume found. Please upload your resume first at POST /api/resume/test-upload'
+            });
+        }
+
+        // Cache check: Skip if already analyzed and JD unchanged
+        if (job.aiAnalysis && job.aiAnalysis.analyzedAt) {
+            return res.status(200).json({
+                success: true,
+                cached: true,
+                message: 'Using cached analysis',
+                data: job.aiAnalysis
+            });
+        }
+
+        // Call Gemini for analysis (use user's resume)
+        const analysis = await matchResumeToJob(user.resumeStructured, job.jobDescription);
+
+        // Save analysis to job
+        job.aiAnalysis = {
+            ...analysis,
+            analyzedAt: new Date()
+        };
+        await job.save();
+
+        res.status(200).json({
+            success: true,
+            cached: false,
+            data: job.aiAnalysis
+        });
+
+    } catch (error) {
+        console.error('Error analyzing job:', error);
+        if (error.message.startsWith('MATCHER_')) {
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to analyze job match. Please try again.'
+            });
+        }
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
 
 module.exports = {
     getJobs,
     createJob,
     deleteJob,
-    updateJobStatus
+    updateJobStatus,
+    analyzeJob
 };

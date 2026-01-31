@@ -85,7 +85,32 @@ Replace `<job_id>` with the `_id` of the job you want to delete (e.g., `67972f..
 ```
 *Note: Setting status to "Applied" will automatically set the `appliedDate`.*
 
-### 7. Upload Resume (Test Endpoint)
+### 7. Analyze Job Match (AI)
+**POST** `/jobs/<job_id>/analyze`
+
+**Prerequisites:**
+- Job must have `jobDescription` field set
+- Job must have `resumeStructured` data (upload resume first)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "cached": false,
+  "data": {
+    "score": 75,
+    "matchLevel": "Medium",
+    "matchingKeywords": ["python", "react", "mongodb"],
+    "missingKeywords": ["kubernetes", "aws"],
+    "reasoning": "Strong match on core skills but missing cloud experience.",
+    "analyzedAt": "2026-01-31T..."
+  }
+}
+```
+
+*Note: Results are cached. Subsequent calls return cached analysis.*
+
+### 8. Upload & Parse Resume (PDF Text Extraction)
 **POST** `/resume/test-upload`
 
 **Body (form-data):**
@@ -93,16 +118,61 @@ Replace `<job_id>` with the `_id` of the job you want to delete (e.g., `67972f..
 - Type: `File`
 - Value: (Select a .pdf file)
 
-*Note: Max size 2MB. Only PDF allowed.*
+**Constraints:**
+- Max size: 2MB
+- Only PDF files allowed (`application/pdf`)
+- Must be text-based PDF (scanned image PDFs will be rejected)
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "File uploaded and parsed successfully",
+  "data": {
+    "filename": "resume.pdf",
+    "text": "John Doe Software Engineer...",
+    "structured": {
+      "candidate": { "name": "John Doe", "email": "...", "phone": "...", "links": [] },
+      "education": [...],
+      "experience": [...],
+      "skills": ["JavaScript", "Python", ...],
+      "projects": [...]
+    }
+  }
+}
+```
+
+**Error Responses:**
+- `400` - Invalid file type, file too large, or scanned PDF
+- `401` - Missing/invalid authorization token
+
+### 9. Get Resume ATS Score
+**POST** `/resume/score`
+
+**Prerequisites:** Upload resume first
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "atsScore": 78,
+    "scoreBreakdown": { "completeness": 20, "keywords": 22, "achievements": 18, "clarity": 18 },
+    "suggestedJobs": ["ML Engineer", "Data Scientist", "Backend Developer"],
+    "strengths": ["Strong Python experience", "ML project portfolio", "Clear quantified achievements"],
+    "improvements": ["Add cloud certifications", "Include more leadership examples", "Expand system design experience"],
+    "summary": "Strong technical candidate with ML focus..."
+  }
+}
+```
 
 ---
 
 ## Testing Flow
 1.  **Register** a new user.
 2.  Copy the `token` from the response.
-3.  In Postman, go to the **Authorization** tab for your Job requests, select **Bearer Token**, and paste the token.
-4.  **Create** a few jobs.
-5.  **Get** the list of jobs to verify they are saved.
-6.  **Update** a job status to 'Applied'.
-7.  **Upload** a resume PDF to the test endpoint.
-8.  **Delete** a job using its ID.
+3.  Set **Bearer Token** in Postman Authorization tab.
+4.  **Upload** resume → `POST /resume/test-upload`
+5.  **Get ATS Score** → `POST /resume/score`
+6.  **Create** job with `jobDescription` field.
+7.  **Analyze** job match → `POST /jobs/:id/analyze`

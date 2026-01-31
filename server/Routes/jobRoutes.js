@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { getJobs, createJob, deleteJob, updateJobStatus } = require('../Controllers/JobController');
+const { getJobs, createJob, deleteJob, updateJobStatus, analyzeJob } = require('../Controllers/JobController');
 const { authenticate } = require('../Middleware/authMiddleware');
 
 // All routes are protected
@@ -15,5 +15,8 @@ router.route('/:id')
 
 router.route('/:id/status')
     .patch(updateJobStatus);
+
+router.route('/:id/analyze')
+    .post(analyzeJob);
 
 module.exports = router;

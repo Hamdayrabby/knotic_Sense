@@ -49,11 +49,31 @@ const jobSchema = new mongoose.Schema({
     appliedDate: {
         type: Date
     },
+    jobDescription: {
+        type: String,
+        default: null
+    },
     aiAnalysis: {
-        matchPercentage: { type: Number },
-        keywordsMatched: [String],
-        suggestions: { type: String },
-        score: { type: Number }
+        score: { type: Number },
+        starRating: { type: Number },
+        visibility: {
+            zone: { type: String },
+            description: { type: String }
+        },
+        scoreBreakdown: { type: Object },
+        matchedKeywords: [{ keyword: String, proofQuote: String }],
+        missingKeywords: [String],
+        roboticFlag: { type: Boolean, default: false },
+        roboticAdvice: { type: String },
+        phrasingSuggestions: [{ current: String, suggested: String, reason: String }],
+        strengths: [String],
+        improvements: [String],
+        reasoning: { type: String },
+        analyzedAt: { type: Date }
+    },
+    resumeStructured: {
+        type: Object,
+        default: null
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
