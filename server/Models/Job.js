@@ -69,7 +69,9 @@ const jobSchema = new mongoose.Schema({
         strengths: [String],
         improvements: [String],
         reasoning: { type: String },
-        analyzedAt: { type: Date }
+        analyzedAt: { type: Date },
+        jdHash: { type: String },      // Hash of jobDescription when analyzed
+        resumeHash: { type: String }   // Hash of user's resume when analyzed
     },
     resumeStructured: {
         type: Object,

@@ -183,6 +183,7 @@ const updateJobStatus = async (req, res) => {
 const analyzeJob = async (req, res) => {
     try {
         const { matchResumeToJob } = require('../Utils/jobMatcher');
+        const { generateContentHash } = require('../Utils/contentHash');
         const User = require('../Models/users');
 
         const job = await Job.findById(req.params.id);
@@ -219,23 +220,34 @@ const analyzeJob = async (req, res) => {
             });
         }
 
-        // Cache check: Skip if already analyzed and JD unchanged
+        // Generate current content hashes
+        const currentJdHash = generateContentHash(job.jobDescription);
+        const currentResumeHash = generateContentHash(user.resumeStructured);
+
+        // Cache check: Use cached result if content hasn't changed
         if (job.aiAnalysis && job.aiAnalysis.analyzedAt) {
-            return res.status(200).json({
-                success: true,
-                cached: true,
-                message: 'Using cached analysis',
-                data: job.aiAnalysis
-            });
+            const cachedJdHash = job.aiAnalysis.jdHash;
+            const cachedResumeHash = job.aiAnalysis.resumeHash;
+
+            if (cachedJdHash === currentJdHash && cachedResumeHash === currentResumeHash) {
+                return res.status(200).json({
+                    success: true,
+                    cached: true,
+                    message: 'Using cached analysis (content unchanged)',
+                    data: job.aiAnalysis
+                });
+            }
         }
 
         // Call Gemini for analysis (use user's resume)
         const analysis = await matchResumeToJob(user.resumeStructured, job.jobDescription);
 
-        // Save analysis to job
+        // Save analysis to job with content hashes
         job.aiAnalysis = {
             ...analysis,
-            analyzedAt: new Date()
+            analyzedAt: new Date(),
+            jdHash: currentJdHash,
+            resumeHash: currentResumeHash
         };
         await job.save();
 
