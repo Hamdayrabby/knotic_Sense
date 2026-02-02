@@ -116,10 +116,12 @@ OUTPUT JSON SCHEMA:
     "experienceScore": Number (0-15),
     "educationScore": Number (0-10),
     "formatScore": Number (0-5),
+    "keywords": Number (0-100) // Normalized 0-100 score for UI
     "profile": Number (0-100),
     "education": Number (0-100),
     "experience": Number (0-100),
-    "skills": Number (0-100)
+    "skills": Number (0-100),
+    "formatting": Number (0-100) // Normalized 0-100 score for UI
   },
   "matchedKeywords": [
     { "keyword": "String", "proofQuote": "String (exact sentence from resume)" }
@@ -127,11 +129,11 @@ OUTPUT JSON SCHEMA:
   "missingKeywords": ["String"],
   "roboticFlag": Boolean,
   "phrasingSuggestions": [
-    { "current": "String (what resume says)", "suggested": "String (what JD uses)", "reason": "String" }
+    { "current": "String", "suggested": "String", "reason": "String" }
   ],
   "strengths": ["String"],
   "improvements": ["String"],
-  "reasoning": "String (2-3 sentences explaining the score)"
+  "reasoning": "String"
 }
 
 Output the JSON object ONLY.

@@ -49,6 +49,10 @@ const jobSchema = new mongoose.Schema({
     appliedDate: {
         type: Date
     },
+    notes: {
+        type: String,
+        default: ''
+    },
     jobDescription: {
         type: String,
         default: null

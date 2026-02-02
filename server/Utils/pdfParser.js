@@ -9,12 +9,10 @@ const cleanText = (text) => {
     if (!text) return '';
 
     return text
-        // Replace excessive newlines and tabs with a single space or explicit newline if needed
-        // For resumes, often preserving some structure is good, but for raw keyword matching,
-        // we might want a straighter text. Let's do logical normalization.
         .replace(/\r\n|\r/g, '\n') // Normalize newlines
         .replace(/\t/g, ' ') // Tabs to spaces
-        .replace(/\s+/g, ' ') // Collapse multiple spaces
+        .replace(/ +/g, ' ') // Collapse multiple spaces (but NOT newlines)
+        .replace(/\n\s*\n/g, '\n\n') // Normalize multiple newlines to double newline
         .replace(/[^\x20-\x7E\n]/g, '') // Remove non-printable chars (keep ASCII printable + newline)
         .trim();
 };

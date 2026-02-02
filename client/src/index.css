@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+/* Knotic Sense - Custom Theme */
+@theme {
+  --color-knotic-bg: #0f172a;
+  --color-knotic-card: #1e293b;
+  --color-knotic-accent: #6366f1;
+  --color-knotic-hover: #4f46e5;
+  --color-knotic-text: #f1f5f9;
+  --color-knotic-muted: #94a3b8;
+  --color-knotic-border: #334155;
+  --color-knotic-error: #ef4444;
+  --color-knotic-success: #22c55e;
+}
+
+/* Base styles */
+body {
+  @apply bg-knotic-bg text-knotic-text antialiased;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-knotic-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-knotic-border);
+  border-radius: 4px;
+}
+
+::webkit-scrollbar-thumb:hover {
+  background: var(--color-knotic-muted);
+}
+
+@layer utilities {
+  .animate-in {
+    animation-duration: 0.5s;
+    animation-fill-mode: both;
+  }
+
+  .fade-in {
+    animation-name: fadeIn;
+  }
+
+  .slide-in-from-bottom-4 {
+    animation-name: slideInFromBottom;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideInFromBottom {
+  from {
+    transform: translateY(1rem);
+  }
+
+  to {
+    transform: translateY(0);
+  }
+}

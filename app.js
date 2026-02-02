@@ -19,11 +19,35 @@ const app = express();
 // Connect to MongoDB
 connectDB();
 
+// CORS configuration - supports multiple origins for dev and production
+const allowedOrigins = [
+  'http://localhost:5173',  // Vite dev server
+  'http://localhost:5174',  // Vite fallback port
+  'http://localhost:3000',  // Alternative local
+  process.env.CLIENT_URL    // Production URL from env
+].filter(Boolean);
+
 // Security middleware
 app.use(helmet()); // Set security HTTP headers
 app.use(hpp()); // Prevent HTTP Parameter Pollution
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: function (origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+
+    // Allow any localhost origin (for development)
+    if (origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+
+    // Allow production CLIENT_URL if set
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) {
+      return callback(null, true);
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
   credentials: true
 }));
 

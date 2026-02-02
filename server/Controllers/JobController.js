@@ -211,25 +211,54 @@ const analyzeJob = async (req, res) => {
             });
         }
 
-        // Get user's resume from profile
-        const user = await User.findById(req.user.id);
-        if (!user.resumeStructured) {
-            return res.status(400).json({
-                success: false,
-                message: 'No resume found. Please upload your resume first at POST /api/resume/test-upload'
-            });
+        let resumeToAnalyze;
+        let resumeHash;
+
+        // DEBUG: Log if file was received
+        console.log('[ANALYZE] req.file exists?', !!req.file);
+        if (req.file) {
+            console.log('[ANALYZE] File details:', req.file.originalname, req.file.size, 'bytes');
         }
 
-        // Generate current content hashes
-        const currentJdHash = generateContentHash(job.jobDescription);
-        const currentResumeHash = generateContentHash(user.resumeStructured);
+        // Check if file was uploaded
+        if (req.file) {
+            const { extractTextFromPDF } = require('../Utils/pdfParser');
+            const { normalizeResume } = require('../Utils/resumeParser');
 
-        // Cache check: Use cached result if content hasn't changed
-        if (job.aiAnalysis && job.aiAnalysis.analyzedAt) {
+            // 1. Extract Text
+            const rawText = await extractTextFromPDF(req.file.buffer);
+            if (!rawText || rawText.length < 50) {
+                return res.status(400).json({ success: false, message: 'Failed to extract text from PDF.' });
+            }
+
+            // 2. Normalize Text
+            resumeToAnalyze = await normalizeResume(rawText);
+            resumeHash = generateContentHash(resumeToAnalyze); // Hash the NEW uploaded resume
+        } else {
+            // Fallback to Profile Resume
+            const user = await User.findById(req.user.id);
+            if (!user.resumeStructured) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'No resume found. Please upload a resume or add one to your profile.'
+                });
+            }
+            resumeToAnalyze = user.resumeStructured;
+            resumeHash = generateContentHash(resumeToAnalyze);
+        }
+
+        // Generate JD Hash
+        const currentJdHash = generateContentHash(job.jobDescription);
+
+        // Force refresh if file was explicitly uploaded (user wants new analysis)
+        const forceRefresh = !!req.file;
+
+        // Cache check - skip if force refresh
+        if (!forceRefresh && job.aiAnalysis && job.aiAnalysis.analyzedAt) {
             const cachedJdHash = job.aiAnalysis.jdHash;
             const cachedResumeHash = job.aiAnalysis.resumeHash;
 
-            if (cachedJdHash === currentJdHash && cachedResumeHash === currentResumeHash) {
+            if (cachedJdHash === currentJdHash && cachedResumeHash === resumeHash) {
                 return res.status(200).json({
                     success: true,
                     cached: true,
@@ -239,15 +268,15 @@ const analyzeJob = async (req, res) => {
             }
         }
 
-        // Call Gemini for analysis (use user's resume)
-        const analysis = await matchResumeToJob(user.resumeStructured, job.jobDescription);
+        // Call Gemini for analysis
+        const analysis = await matchResumeToJob(resumeToAnalyze, job.jobDescription);
 
-        // Save analysis to job with content hashes
+        // Save analysis to job
         job.aiAnalysis = {
             ...analysis,
             analyzedAt: new Date(),
             jdHash: currentJdHash,
-            resumeHash: currentResumeHash
+            resumeHash: resumeHash
         };
         await job.save();
 
@@ -273,10 +302,77 @@ const analyzeJob = async (req, res) => {
     }
 };
 
+// @desc    Update job details
+// @route   PUT /api/jobs/:id
+// @access  Private
+const updateJob = async (req, res) => {
+    try {
+        let job = await Job.findById(req.params.id);
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found'
+            });
+        }
+
+        // Check ownership
+        if (job.user.toString() !== req.user.id) {
+            return res.status(401).json({
+                success: false,
+                message: 'Not authorized to update this job'
+            });
+        }
+
+        // Fields to update
+        const {
+            company,
+            position,
+            description,
+            location,
+            salary,
+            appliedDate,
+            jobDescription,
+            notes
+        } = req.body;
+
+        // Build update object
+        const updateFields = {};
+        if (company) updateFields.company = company;
+        if (position) updateFields.position = position;
+        if (description) updateFields.description = description;
+        if (location) updateFields.location = location;
+        if (salary) updateFields.salary = salary;
+        if (appliedDate) updateFields.appliedDate = appliedDate;
+        if (jobDescription) updateFields.jobDescription = jobDescription;
+        if (notes !== undefined) updateFields.notes = notes; // Allow empty string
+
+        job = await Job.findByIdAndUpdate(
+            req.params.id,
+            { $set: updateFields },
+            { new: true, runValidators: true }
+        );
+
+        res.status(200).json({
+            success: true,
+            data: job
+        });
+
+    } catch (error) {
+        console.error('Error updating job:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
 module.exports = {
     getJobs,
     createJob,
     deleteJob,
     updateJobStatus,
+    updateJob,
     analyzeJob
 };
