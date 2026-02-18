@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Briefcase, TrendingUp, Clock, Target, Plus, Upload, List, Loader2 } from 'lucide-react';
+import { Briefcase, TrendingUp, Clock, Target, Plus, Upload, List, Loader2, XCircle } from 'lucide-react';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -31,12 +31,14 @@ const Dashboard = () => {
         const applied = jobs.filter(j => j.status === 'Applied').length;
         const interviewing = jobs.filter(j => j.status === 'Interviewing').length;
         const offers = jobs.filter(j => j.status === 'Offer').length;
-        const successRate = total > 0 ? Math.round((offers / total) * 100) : 0;
+        const rejected = jobs.filter(j => j.status === 'Rejected').length;
+        const concluded = offers + rejected;
+        const successRate = concluded > 0 ? Math.round((offers / concluded) * 100) : 0;
 
         return [
             { label: 'Total Jobs', value: String(total), icon: Briefcase, color: 'from-blue-500 to-cyan-500' },
-            { label: 'Applied', value: String(applied), icon: Target, color: 'from-knotic-accent to-purple-500' },
             { label: 'Interviews', value: String(interviewing), icon: Clock, color: 'from-orange-500 to-amber-500' },
+            { label: 'Rejected', value: String(rejected), icon: XCircle, color: 'from-rose-500 to-red-500' },
             { label: 'Success Rate', value: `${successRate}%`, icon: TrendingUp, color: 'from-emerald-500 to-green-500' },
         ];
     }, [jobs]);
@@ -146,16 +148,16 @@ const Dashboard = () => {
                                 <div className="flex items-center gap-4">
                                     {job.aiAnalysis?.score && (
                                         <span className={`text-lg font-bold ${job.aiAnalysis.score >= 85 ? 'text-emerald-500' :
-                                                job.aiAnalysis.score >= 60 ? 'text-amber-500' : 'text-rose-500'
+                                            job.aiAnalysis.score >= 60 ? 'text-amber-500' : 'text-rose-500'
                                             }`}>
                                             {job.aiAnalysis.score}%
                                         </span>
                                     )}
                                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${job.status === 'Offer' ? 'bg-emerald-500/10 text-emerald-500' :
-                                            job.status === 'Interviewing' ? 'bg-orange-500/10 text-orange-500' :
-                                                job.status === 'Applied' ? 'bg-blue-500/10 text-blue-500' :
-                                                    job.status === 'Rejected' ? 'bg-rose-500/10 text-rose-500' :
-                                                        'bg-knotic-accent/10 text-knotic-accent'
+                                        job.status === 'Interviewing' ? 'bg-orange-500/10 text-orange-500' :
+                                            job.status === 'Applied' ? 'bg-blue-500/10 text-blue-500' :
+                                                job.status === 'Rejected' ? 'bg-rose-500/10 text-rose-500' :
+                                                    'bg-knotic-accent/10 text-knotic-accent'
                                         }`}>
                                         {job.status}
                                     </span>
