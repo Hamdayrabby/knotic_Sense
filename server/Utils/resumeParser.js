@@ -122,13 +122,13 @@ Output the JSON object ONLY.
  * @returns {string} Clean JSON string
  */
 const extractJSON = (text) => {
-    // Remove markdown code blocks if present
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-    if (jsonMatch) {
-        return jsonMatch[1].trim();
-    }
-    // Return as-is if no backticks
-    return text.trim();
+  // Remove markdown code blocks if present
+  const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+  if (jsonMatch) {
+    return jsonMatch[1].trim();
+  }
+  // Return as-is if no backticks
+  return text.trim();
 };
 
 /**
@@ -137,31 +137,31 @@ const extractJSON = (text) => {
  * @returns {Promise<Object>} Structured resume data
  */
 const normalizeResume = async (rawText) => {
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY is not configured');
+  if (!process.env.GEMINI_API_KEY) {
+    throw new Error('GEMINI_API_KEY is not configured');
+  }
+
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+  const prompt = `${systemPrompt}\n\nRESUME TEXT:\n${rawText}`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
+
+    const cleanJSON = extractJSON(text);
+    const parsed = JSON.parse(cleanJSON);
+
+    return parsed;
+  } catch (error) {
+    console.error('Gemini API Error Details:', error.message);
+    if (error instanceof SyntaxError) {
+      throw new Error('LLM_PARSE_ERROR: Failed to parse LLM response as JSON');
     }
-
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
-
-    const prompt = `${systemPrompt}\n\nRESUME TEXT:\n${rawText}`;
-
-    try {
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-
-        const cleanJSON = extractJSON(text);
-        const parsed = JSON.parse(cleanJSON);
-
-        return parsed;
-    } catch (error) {
-        console.error('Gemini API Error Details:', error.message);
-        if (error instanceof SyntaxError) {
-            throw new Error('LLM_PARSE_ERROR: Failed to parse LLM response as JSON');
-        }
-        throw new Error(`LLM_API_ERROR: ${error.message}`);
-    }
+    throw new Error(`LLM_API_ERROR: ${error.message}`);
+  }
 };
 
 module.exports = { normalizeResume };
