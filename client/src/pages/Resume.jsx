@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FileText, Upload, Sparkles, AlertCircle, CheckCircle2, Loader2, Briefcase, GraduationCap, Code, Award, User as UserIcon, Mail, Phone, Link as LinkIcon, ChevronDown, ChevronUp } from 'lucide-react';
+import { FileText, Upload, Sparkles, AlertCircle, CheckCircle2, Loader2, Briefcase, GraduationCap, Code, Award, User as UserIcon, Mail, Phone, Link as LinkIcon, ChevronDown, ChevronUp, List, XCircle } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import ScoreGauge from '../components/job-details/ScoreGauge';
@@ -13,10 +13,60 @@ const Resume = () => {
     const [isUploading, setIsUploading] = useState(false);
     const [isCalculating, setIsCalculating] = useState(false);
     const [activeTab, setActiveTab] = useState('overview'); // overview, skills, experience, education
+    const [activeResumeId, setActiveResumeId] = useState(null); // Track which resume is currently selected
 
     // Resume Data Access
     const resumeData = user?.resumeStructured || null;
     const analysisData = resumeData?._analysis || null;
+    let resumeHistory = user?.resumes || [];
+
+    // Backward compatibility for users who uploaded before the `resumes` array feature
+    if (resumeHistory.length === 0 && resumeData) {
+        resumeHistory = [{
+            _id: 'legacy-resume',
+            fileName: 'Previous Upload',
+            structured: resumeData,
+            uploadedAt: user?.updatedAt || new Date()
+        }];
+    }
+
+
+    const handleDeleteResume = async (resumeId, e) => {
+        e.stopPropagation();
+        if (!window.confirm('Are you sure you want to delete this resume?')) return;
+
+        try {
+            const res = await api.delete(`/resume/${resumeId}`);
+            // Update local user state with new history
+            const updatedResumes = res.data.data;
+            const updatedUser = { ...user, resumes: updatedResumes };
+
+            // If we deleted the "current" resume, we might want to revert to the latest one or clear it
+            // As a simple fix: if resumes is empty, clear resumeStructured. 
+            if (resumeId === 'legacy-resume' || updatedResumes.length === 0) {
+                updatedUser.resumeStructured = null;
+                updatedUser.resumes = updatedResumes;
+            } else if (JSON.stringify(user.resumeStructured) === JSON.stringify(resumeHistory.find(r => r._id === resumeId)?.structured)) {
+                // We deleted the currently viewed one. Switch to the latest remaining.
+                const latest = updatedResumes[updatedResumes.length - 1];
+                updatedUser.resumeStructured = latest.structured;
+            }
+
+            setUser(updatedUser);
+            localStorage.setItem('knotic_user', JSON.stringify(updatedUser));
+            toast.success('Resume deleted');
+        } catch (error) {
+            console.error('Delete failed:', error);
+            toast.error('Failed to delete resume');
+        }
+    };
+
+    const handleSelectResume = (resume) => {
+        // Set this resume as the "active" one in the view
+        const updatedUser = { ...user, resumeStructured: resume.structured };
+        setUser(updatedUser);
+        setActiveResumeId(resume._id);
+    };
 
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
@@ -43,11 +93,11 @@ const Resume = () => {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
 
-            const { structured } = response.data.data;
+            const { structured, history } = response.data.data;
 
             // Allow for analysis data persistence if we already had it? 
             // Usually new upload means new analysis needed.
-            const updatedUser = { ...user, resumeStructured: structured };
+            const updatedUser = { ...user, resumeStructured: structured, resumes: history };
             setUser(updatedUser);
             localStorage.setItem('knotic_user', JSON.stringify(updatedUser));
 
@@ -66,21 +116,36 @@ const Resume = () => {
         }
     };
 
-    const handleCalculateScore = async (currentUser = user) => {
+    const handleCalculateScore = async () => {
         setIsCalculating(true);
         const toastId = toast.loading('Analyzing Resume Strength...');
         try {
-            const res = await api.post('/resume/score');
-            const scoreData = res.data.data;
+            // Pass the active resume ID to score a specific history item
+            const res = await api.post('/resume/score', { resumeId: activeResumeId });
 
-            // Merge score into structure using _analysis key
-            const updatedUser = {
-                ...currentUser,
-                resumeStructured: {
-                    ...currentUser.resumeStructured,
-                    _analysis: scoreData
+            // The backend now returns the updated history list. Update the user context.
+            const updatedUser = { ...user };
+
+            if (res.data.history) {
+                updatedUser.resumes = res.data.history;
+
+                // If we are looking at a specific history item, update the view to its newly scored version
+                if (activeResumeId && activeResumeId !== 'legacy-resume') {
+                    const scoredCV = res.data.history.find(r => r._id === activeResumeId);
+                    if (scoredCV) {
+                        updatedUser.resumeStructured = scoredCV.structured;
+                    }
+                } else if (res.data.resumeStructured) {
+                    // We were looking at the default/legacy one
+                    updatedUser.resumeStructured = res.data.resumeStructured;
+                } else {
+                    updatedUser.resumeStructured = { ...user.resumeStructured, _analysis: res.data.data };
                 }
-            };
+            } else {
+                // Fallback if backend didn't send history
+                updatedUser.resumeStructured = { ...user.resumeStructured, _analysis: res.data.data };
+            }
+
             setUser(updatedUser);
             localStorage.setItem('knotic_user', JSON.stringify(updatedUser)); // Persist
 
@@ -166,8 +231,50 @@ const Resume = () => {
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                {/* Left: Profile Card & Summary (4 Cols) */}
+                {/* LEFT SIDEBAR: History & Profile (4 Cols) */}
                 <div className="lg:col-span-4 space-y-6">
+
+                    {/* Resume History List */}
+                    <div className="bg-knotic-card border border-knotic-border rounded-xl p-6">
+                        <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                            <List className="w-5 h-5 text-knotic-accent" />
+                            History
+                        </h3>
+                        <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            {resumeHistory.length === 0 && (
+                                <p className="text-sm text-knotic-muted italic">No history yet.</p>
+                            )}
+                            {[...resumeHistory].reverse().map((resume) => (
+                                <div
+                                    key={resume._id}
+                                    onClick={() => handleSelectResume(resume)}
+                                    className={`p-3 rounded-lg border cursor-pointer transition-all group relative ${JSON.stringify(resumeData) === JSON.stringify(resume.structured)
+                                        ? 'bg-knotic-accent/10 border-knotic-accent'
+                                        : 'bg-knotic-bg/50 border-knotic-border hover:border-knotic-muted'
+                                        }`}
+                                >
+                                    <div className="flex items-start justify-between">
+                                        <div className="truncate pr-6">
+                                            <p className="text-sm font-medium text-knotic-text truncate" title={resume.fileName}>
+                                                {resume.fileName}
+                                            </p>
+                                            <p className="text-xs text-knotic-muted mt-1">
+                                                {new Date(resume.uploadedAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => handleDeleteResume(resume._id, e)}
+                                            className="absolute top-3 right-3 text-knotic-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                                            title="Delete"
+                                        >
+                                            <XCircle className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     {/* Candidate Profile */}
                     <div className="bg-knotic-card border border-knotic-border rounded-xl p-6">
                         <div className="flex items-center gap-4 mb-6">
@@ -258,8 +365,8 @@ const Resume = () => {
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 className={`px-6 py-3 font-medium text-sm transition-colors border-b-2 capitalize whitespace-nowrap ${activeTab === tab
-                                        ? 'border-knotic-accent text-knotic-text'
-                                        : 'border-transparent text-knotic-muted hover:text-knotic-text'
+                                    ? 'border-knotic-accent text-knotic-text'
+                                    : 'border-transparent text-knotic-muted hover:text-knotic-text'
                                     }`}
                             >
                                 {tab}

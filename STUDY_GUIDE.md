@@ -679,6 +679,28 @@ app.get('/', (req, res) => res.json({ message: 'API Running' }));
 
 ---
 
+## Feature Details: Resume Library & CV Selection
+
+### Problem
+Originally, users could only store a single parsed resume in the `User` schema (`resumeStructured`). If they applied to a new job with a tailored CV, they lost their old AI insights and structural data. 
+
+### Solution
+1. **Database Update**: Migrated from a single object to a `resumes` array in MongoDB:
+   ```javascript
+   resumes: [{
+       fileName: String,
+       text: String,
+       structured: Object,
+       uploadedAt: { type: Date, default: Date.now }
+   }]
+   ```
+2. **Backward Compatibility**: To prevent breaking old features immediately, the route updates *both* the new array and the old `resumeStructured` legacy field. Old CVs (uploaded before the array existed) are dynamically injected into the frontend history list as "Previous Upload" to ensure users can still view or delete them.
+3. **Job Details Integration**: Instead of the AI automatically matching against the default profile resume, the Job Details page now includes a dropdown of the user's `resumeHistory`. This passes the specific `resumeId` to the `POST /api/jobs/:id/analyze` backend endpoint. The backend fetches that exact CV from the user's history array, parses it, and saves the AI results.
+
+**Interview Talking Point**: "When adding the multiple-resume feature, my biggest priority was backward compatibility. I didn't want to break the existing dashboard for current users, so I designed a hybrid approach where the active CV is still accessible via the root document, but all historical CVs are preserved in an array. I also dynamically polyfilled old single-CV uploads into the history array on the frontend so users wouldn't lose access to them."
+
+---
+
 ## Debugging Workflow
 
 When frontend-backend integration fails, follow this checklist:

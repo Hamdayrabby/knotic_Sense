@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 const ScoreGauge = ({ score, label, color = 'text-indigo-500', size = 'md' }) => {
     // Config based on size
     const config = {
-        sm: { width: 60, stroke: 4, text: 'text-xs' },
+        sm: { width: 42, stroke: 4, text: 'text-[11px]' },
         md: { width: 100, stroke: 8, text: 'text-lg' },
         lg: { width: 150, stroke: 12, text: 'text-3xl' },
     };
@@ -46,7 +46,7 @@ const ScoreGauge = ({ score, label, color = 'text-indigo-500', size = 'md' }) =>
                 {/* Percentage Text */}
                 <div className="absolute inset-0 flex items-center justify-center">
                     <span className={`font-bold text-knotic-text ${text}`}>
-                        {score}%
+                        {Math.round(score)}%
                     </span>
                 </div>
             </div>

@@ -234,8 +234,17 @@ const analyzeJob = async (req, res) => {
             // 2. Normalize Text
             resumeToAnalyze = await normalizeResume(rawText);
             resumeHash = generateContentHash(resumeToAnalyze); // Hash the NEW uploaded resume
+        } else if (req.body.resumeId && req.body.resumeId !== 'legacy-resume') {
+            // Select from history
+            const user = await User.findById(req.user.id);
+            const specificResume = user?.resumes?.find(r => r._id.toString() === req.body.resumeId);
+            if (!specificResume) {
+                return res.status(404).json({ success: false, message: 'Selected resume not found in history.' });
+            }
+            resumeToAnalyze = specificResume.structured;
+            resumeHash = generateContentHash(resumeToAnalyze);
         } else {
-            // Fallback to Profile Resume
+            // Fallback to Profile Resume (Legacy or specific user default)
             const user = await User.findById(req.user.id);
             if (!user.resumeStructured) {
                 return res.status(400).json({

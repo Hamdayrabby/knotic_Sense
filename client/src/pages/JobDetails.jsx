@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Loader2, Sparkles, AlertCircle, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Sparkles, AlertCircle, FileText, CheckCircle2, ChevronDown } from 'lucide-react';
 import api from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 import Timeline from '../components/job-details/Timeline';
 import ScoreGauge from '../components/job-details/ScoreGauge';
@@ -69,6 +70,10 @@ const JobDetails = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview'); // overview, notes
 
+    const { user } = useAuth();
+    const resumeHistory = user?.resumes || [];
+    const [selectedResumeId, setSelectedResumeId] = useState('');
+
     useEffect(() => {
         fetchJobDetails();
     }, [id]);
@@ -121,7 +126,8 @@ const JobDetails = () => {
                     timeout: 120000 // 2 minute timeout
                 });
             } else {
-                response = await api.post(`/jobs/${id}/analyze`, {}, {
+                const payload = selectedResumeId ? { resumeId: selectedResumeId } : {};
+                response = await api.post(`/jobs/${id}/analyze`, payload, {
                     timeout: 120000
                 });
             }
@@ -207,7 +213,27 @@ const JobDetails = () => {
                                     <Sparkles className="w-5 h-5" /> Run Analysis
                                 </button>
                             </div>
-                            <p className="text-xs text-knotic-muted opacity-60">Using Default Profile Resume</p>
+
+                            {/* CV Selector */}
+                            {resumeHistory.length > 0 && (
+                                <div className="flex items-center gap-2 text-xs text-knotic-muted mt-2">
+                                    <span>Using CV:</span>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedResumeId}
+                                            onChange={(e) => setSelectedResumeId(e.target.value)}
+                                            className="appearance-none bg-knotic-card border border-knotic-border rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-knotic-accent cursor-pointer"
+                                        >
+                                            <option value="">Default Profile CV</option>
+                                            {[...resumeHistory].reverse().map(r => (
+                                                <option key={r._id} value={r._id}>{r.fileName}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 absolute right-2 top-1.5 pointer-events-none opacity-50" />
+                                    </div>
+                                </div>
+                            )}
+                            {resumeHistory.length === 0 && <p className="text-xs text-knotic-muted opacity-60">Using Default Profile Resume</p>}
                         </div>
                     ) : (
                         <div className="flex flex-col items-end gap-2">
@@ -228,11 +254,20 @@ const JobDetails = () => {
                                 />
                                 <label
                                     htmlFor="job-resume-reupload"
-                                    className="cursor-pointer text-sm font-medium text-knotic-accent bg-knotic-accent/10 hover:bg-knotic-accent hover:text-white px-4 py-2 rounded-lg transition-all border border-knotic-accent/20 flex items-center gap-2"
+                                    className="cursor-pointer text-sm font-medium text-knotic-accent bg-knotic-accent/10 hover:bg-knotic-accent hover:text-white px-4 py-2 rounded-lg transition-all border border-knotic-accent/20 flex items-center gap-2 h-12"
                                 >
-                                    <FileText className="w-4 h-4" /> Update CV & Re-Analyze
+                                    <FileText className="w-4 h-4" /> Update CV
                                 </label>
-                                <div className={`px-6 py-3 rounded-xl border ${visibilityColor} flex items-center gap-3`}>
+                                <button
+                                    onClick={() => {
+                                        toast.loading('Re-analyzing...', { id: 'reanalyze' });
+                                        handleAnalyze();
+                                    }}
+                                    className="bg-knotic-card hover:bg-knotic-border border border-knotic-border text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all h-12"
+                                >
+                                    <Sparkles className="w-4 h-4" /> Re-Analyze
+                                </button>
+                                <div className={`px-5 py-2 rounded-xl border ${visibilityColor} flex items-center gap-3 h-12`}>
                                     <ScoreGauge score={score} size="sm" color={score >= 85 ? 'text-emerald-500' : score >= 60 ? 'text-amber-500' : 'text-rose-500'} />
                                     <div>
                                         <p className="text-xs text-knotic-muted uppercase tracking-wider">Visibility Zone</p>
@@ -240,6 +275,25 @@ const JobDetails = () => {
                                     </div>
                                 </div>
                             </div>
+                            {/* CV Selector for Re-Analysis */}
+                            {resumeHistory.length > 0 && (
+                                <div className="flex items-center gap-2 text-xs text-knotic-muted mt-2">
+                                    <span>Test against CV:</span>
+                                    <div className="relative">
+                                        <select
+                                            value={selectedResumeId}
+                                            onChange={(e) => setSelectedResumeId(e.target.value)}
+                                            className="appearance-none bg-knotic-card border border-knotic-border rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:border-knotic-accent cursor-pointer"
+                                        >
+                                            <option value="">Default Profile CV</option>
+                                            {[...resumeHistory].reverse().map(r => (
+                                                <option key={r._id} value={r._id}>{r.fileName}</option>
+                                            ))}
+                                        </select>
+                                        <ChevronDown className="w-4 h-4 absolute right-2 top-1.5 pointer-events-none opacity-50" />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

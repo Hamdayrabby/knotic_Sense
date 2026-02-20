@@ -37,7 +37,16 @@ const userSchema = new mongoose.Schema({
   resumeStructured: {
     type: Object,
     default: null
-  }
+  },
+  resumes: [{
+    fileName: String,
+    text: String,
+    structured: Object,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }]
 }, {
   timestamps: true // Automatically adds createdAt and updatedAt
 });

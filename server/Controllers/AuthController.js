@@ -79,6 +79,8 @@ const register = async (req, res) => {
           name: user.name,
           role: user.role,
           profilePicture: user.profilePicture,
+          resumeStructured: user.resumeStructured,
+          resumes: user.resumes,
           createdAt: user.createdAt
         },
         token
@@ -173,6 +175,8 @@ const login = async (req, res) => {
           name: user.name,
           role: user.role,
           profilePicture: user.profilePicture,
+          resumeStructured: user.resumeStructured,
+          resumes: user.resumes,
           createdAt: user.createdAt
         },
         token
