@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
-import { Briefcase, TrendingUp, Clock, Target, Plus, Upload, List, Loader2, XCircle } from 'lucide-react';
+import { Briefcase, TrendingUp, Clock, Target, Upload, List, Loader2, XCircle } from 'lucide-react';
 
 const Dashboard = () => {
     const { user } = useAuth();
@@ -29,7 +29,10 @@ const Dashboard = () => {
     const stats = useMemo(() => {
         const total = jobs.length;
         const applied = jobs.filter(j => j.status === 'Applied').length;
-        const interviewing = jobs.filter(j => j.status === 'Interviewing').length;
+        const interviewing = jobs.filter(j =>
+            j.status === 'Interviewing' ||
+            (j.statusHistory && j.statusHistory.some(h => h.status === 'Interviewing'))
+        ).length;
         const offers = jobs.filter(j => j.status === 'Offer').length;
         const rejected = jobs.filter(j => j.status === 'Rejected').length;
         const concluded = offers + rejected;
@@ -85,13 +88,6 @@ const Dashboard = () => {
             <div className="bg-knotic-card border border-knotic-border rounded-2xl p-6">
                 <h2 className="text-xl font-semibold text-knotic-text mb-4">Quick Actions</h2>
                 <div className="flex flex-wrap gap-4">
-                    <button
-                        onClick={() => navigate('/jobs')}
-                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-knotic-accent to-purple-500 text-white font-medium rounded-xl hover:from-knotic-hover hover:to-purple-600 transition-all duration-200 shadow-lg shadow-knotic-accent/25"
-                    >
-                        <Plus className="w-5 h-5" />
-                        Add New Job
-                    </button>
                     <button
                         onClick={() => navigate('/resume')}
                         className="flex items-center gap-2 px-6 py-3 bg-knotic-bg border border-knotic-border text-knotic-text font-medium rounded-xl hover:border-knotic-accent hover:text-knotic-accent transition-all duration-200"
