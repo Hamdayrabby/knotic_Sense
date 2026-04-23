@@ -95,17 +95,19 @@ const Resume = () => {
 
             const { structured, history } = response.data.data;
 
-            // Allow for analysis data persistence if we already had it? 
-            // Usually new upload means new analysis needed.
+            // The newly uploaded resume is the last one in the history array
+            const newResume = history[history.length - 1];
+
             const updatedUser = { ...user, resumeStructured: structured, resumes: history };
             setUser(updatedUser);
+            setActiveResumeId(newResume._id);
             localStorage.setItem('knotic_user', JSON.stringify(updatedUser));
 
             setFile(null);
             toast.success('Resume parsed successfully!');
 
-            // Auto-trigger scoring?
-            handleCalculateScore(updatedUser);
+            // Auto-trigger scoring for the new resume explicitly
+            handleCalculateScore(newResume._id);
 
         } catch (error) {
             console.error('Upload failed:', error);
@@ -116,12 +118,13 @@ const Resume = () => {
         }
     };
 
-    const handleCalculateScore = async () => {
+    const handleCalculateScore = async (overrideResumeId = null) => {
         setIsCalculating(true);
         const toastId = toast.loading('Analyzing Resume Strength...');
         try {
+            const targetId = overrideResumeId || activeResumeId;
             // Pass the active resume ID to score a specific history item
-            const res = await api.post('/resume/score', { resumeId: activeResumeId });
+            const res = await api.post('/resume/score', { resumeId: targetId });
 
             // The backend now returns the updated history list. Update the user context.
             const updatedUser = { ...user };
@@ -130,8 +133,8 @@ const Resume = () => {
                 updatedUser.resumes = res.data.history;
 
                 // If we are looking at a specific history item, update the view to its newly scored version
-                if (activeResumeId && activeResumeId !== 'legacy-resume') {
-                    const scoredCV = res.data.history.find(r => r._id === activeResumeId);
+                if (targetId && targetId !== 'legacy-resume') {
+                    const scoredCV = res.data.history.find(r => r._id === targetId);
                     if (scoredCV) {
                         updatedUser.resumeStructured = scoredCV.structured;
                     }

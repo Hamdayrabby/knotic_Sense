@@ -57,6 +57,10 @@ const jobSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    jdStructured: {
+        type: Object,
+        default: null
+    },
     aiAnalysis: {
         score: { type: Number },
         starRating: { type: Number },
@@ -76,6 +80,10 @@ const jobSchema = new mongoose.Schema({
         analyzedAt: { type: Date },
         jdHash: { type: String },      // Hash of jobDescription when analyzed
         resumeHash: { type: String }   // Hash of user's resume when analyzed
+    },
+    analysisHistory: {
+        type: Array, // Array of { resumeHash, jdHash, data }
+        default: []
     },
     resumeStructured: {
         type: Object,

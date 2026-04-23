@@ -213,6 +213,8 @@ const analyzeJob = async (req, res) => {
 
         let resumeToAnalyze;
         let resumeHash;
+        let newResumeId = null;
+        let updatedHistory = null;
 
         // DEBUG: Log if file was received
         console.log('[ANALYZE] req.file exists?', !!req.file);
@@ -233,7 +235,28 @@ const analyzeJob = async (req, res) => {
 
             // 2. Normalize Text
             resumeToAnalyze = await normalizeResume(rawText);
+
+            // 3. Generate Base ATS Score
+            const { scoreResume } = require('../Utils/resumeScorer');
+            const baseAnalysis = await scoreResume(resumeToAnalyze);
+            resumeToAnalyze._analysis = baseAnalysis;
+
             resumeHash = generateContentHash(resumeToAnalyze); // Hash the NEW uploaded resume
+
+            // 3. Save the new CV to the user's history
+            const userDoc = await User.findById(req.user.id);
+            if (userDoc) {
+                userDoc.resumes = userDoc.resumes || [];
+                userDoc.resumes.push({
+                    fileName: req.file.originalname,
+                    text: rawText,
+                    structured: resumeToAnalyze,
+                    uploadedAt: new Date()
+                });
+                await userDoc.save();
+                updatedHistory = userDoc.resumes;
+                newResumeId = userDoc.resumes[userDoc.resumes.length - 1]._id;
+            }
         } else if (req.body.resumeId && req.body.resumeId !== 'legacy-resume') {
             // Select from history
             const user = await User.findById(req.user.id);
@@ -259,40 +282,73 @@ const analyzeJob = async (req, res) => {
         // Generate JD Hash
         const currentJdHash = generateContentHash(job.jobDescription);
 
-        // Force refresh if file was explicitly uploaded (user wants new analysis)
-        const forceRefresh = !!req.file;
+        // Force refresh if file was explicitly uploaded or requested by client
+        const forceRefresh = !!req.file || req.body.forceRefresh === true;
 
-        // Cache check - skip if force refresh
-        if (!forceRefresh && job.aiAnalysis && job.aiAnalysis.analyzedAt) {
-            const cachedJdHash = job.aiAnalysis.jdHash;
-            const cachedResumeHash = job.aiAnalysis.resumeHash;
+        // Cache check - look in the analysisHistory array
+        if (!forceRefresh && job.analysisHistory && job.analysisHistory.length > 0) {
+            const cachedEntry = job.analysisHistory.find(
+                entry => entry.jdHash === currentJdHash && entry.resumeHash === resumeHash
+            );
 
-            if (cachedJdHash === currentJdHash && cachedResumeHash === resumeHash) {
+            if (cachedEntry) {
+                // Update the current primary aiAnalysis pointer to this cached match
+                job.aiAnalysis = cachedEntry.data;
+                await job.save();
+
                 return res.status(200).json({
                     success: true,
                     cached: true,
-                    message: 'Using cached analysis (content unchanged)',
-                    data: job.aiAnalysis
+                    message: 'Using cached analysis from history',
+                    data: cachedEntry.data,
+                    history: updatedHistory,
+                    newResumeId: newResumeId
                 });
             }
         }
 
-        // Call Gemini for analysis
-        const analysis = await matchResumeToJob(resumeToAnalyze, job.jobDescription);
+        // --- PORTFOLIO-GRADE DETERMINISTIC ATS LIFECYCLE ---
+
+        // 1. Parse Job Description (Cache it if not already parsed)
+        if (!job.jdStructured) {
+            const { parseJD } = require('../Utils/jdParser');
+            job.jdStructured = await parseJD(job.jobDescription);
+        }
+
+        // 2. Deterministic Scoring Engine (No LLM Math)
+        const { calculateDeterministicScore } = require('../Utils/scoringEngine');
+        const scoreMetrics = calculateDeterministicScore(resumeToAnalyze, job.jdStructured);
+
+        // 3. AI Advisory Layer (Qualitative Feedback Only)
+        const { generateMatchFeedback } = require('../Utils/jobMatcher');
+        const analysis = await generateMatchFeedback(resumeToAnalyze, job.jobDescription, scoreMetrics);
 
         // Save analysis to job
-        job.aiAnalysis = {
+        const newAnalysisObj = {
             ...analysis,
             analyzedAt: new Date(),
             jdHash: currentJdHash,
             resumeHash: resumeHash
         };
+        job.aiAnalysis = newAnalysisObj;
+
+        if (!job.analysisHistory) job.analysisHistory = [];
+        // Remove old entry with same hashes to prevent duplicates
+        job.analysisHistory = job.analysisHistory.filter(h => h.resumeHash !== resumeHash || h.jdHash !== currentJdHash);
+        job.analysisHistory.push({
+            resumeHash,
+            jdHash: currentJdHash,
+            data: newAnalysisObj
+        });
+
         await job.save();
 
         res.status(200).json({
             success: true,
             cached: false,
-            data: job.aiAnalysis
+            data: job.aiAnalysis,
+            history: updatedHistory,
+            newResumeId: newResumeId
         });
 
     } catch (error) {

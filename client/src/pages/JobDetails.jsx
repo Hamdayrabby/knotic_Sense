@@ -70,7 +70,7 @@ const JobDetails = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview'); // overview, notes
 
-    const { user } = useAuth();
+    const { user, setUser } = useAuth();
     const resumeHistory = user?.resumes || [];
     const [selectedResumeId, setSelectedResumeId] = useState('');
 
@@ -112,7 +112,7 @@ const JobDetails = () => {
         }
     };
 
-    const handleAnalyze = async (file = null) => {
+    const handleAnalyze = async (file = null, forceRefresh = false) => {
         setIsAnalyzing(true);
 
         try {
@@ -120,6 +120,7 @@ const JobDetails = () => {
             if (file) {
                 const formData = new FormData();
                 formData.append('resume', file);
+                formData.append('forceRefresh', true);
                 // Must set Content-Type to undefined to let axios auto-set multipart/form-data with boundary
                 response = await api.post(`/jobs/${id}/analyze`, formData, {
                     headers: { 'Content-Type': undefined },
@@ -127,6 +128,8 @@ const JobDetails = () => {
                 });
             } else {
                 const payload = selectedResumeId ? { resumeId: selectedResumeId } : {};
+                if (forceRefresh) payload.forceRefresh = true;
+
                 response = await api.post(`/jobs/${id}/analyze`, payload, {
                     timeout: 120000
                 });
@@ -137,6 +140,19 @@ const JobDetails = () => {
             console.log('New analysis data:', response.data.data);
 
             setJob(prev => ({ ...prev, aiAnalysis: response.data.data }));
+
+            // If the backend sent back an updated CV history (e.g. we uploaded a new CV)
+            if (response.data.history) {
+                const updatedUser = { ...user, resumes: response.data.history };
+                setUser(updatedUser);
+                localStorage.setItem('knotic_user', JSON.stringify(updatedUser));
+            }
+
+            // If a new resume was created, auto-select it in the dropdown
+            if (response.data.newResumeId) {
+                setSelectedResumeId(response.data.newResumeId);
+            }
+
             toast.success(response.data.cached ? 'Using cached analysis' : 'Fresh analysis complete!', { id: 'reanalyze' });
         } catch (err) {
             console.error('Analysis failed:', err);
@@ -260,8 +276,8 @@ const JobDetails = () => {
                                 </label>
                                 <button
                                     onClick={() => {
-                                        toast.loading('Re-analyzing...', { id: 'reanalyze' });
-                                        handleAnalyze();
+                                        toast.loading('Forcing Re-analysis...', { id: 'reanalyze' });
+                                        handleAnalyze(null, true);
                                     }}
                                     className="bg-knotic-card hover:bg-knotic-border border border-knotic-border text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all h-12"
                                 >

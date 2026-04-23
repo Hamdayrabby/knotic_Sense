@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { HfInference } = require('@huggingface/inference');
 
 const systemPrompt = `
 Convert raw, messy text extracted from a PDF resume into a STRICT, VALID JSON object.
@@ -132,31 +132,35 @@ const extractJSON = (text) => {
 };
 
 /**
- * Normalize resume text into structured JSON using Gemini Flash
+ * Normalize resume text into structured JSON using Hugging Face
  * @param {string} rawText - Raw text extracted from PDF
  * @returns {Promise<Object>} Structured resume data
  */
 const normalizeResume = async (rawText) => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY is not configured');
+  if (!process.env.HUGGINGFACE_API_KEY) {
+    throw new Error('HUGGINGFACE_API_KEY is not configured');
   }
 
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+  const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+  const model = process.env.HUGGINGFACE_MODEL || 'meta-llama/Llama-3.3-70B-Instruct';
 
   const prompt = `${systemPrompt}\n\nRESUME TEXT:\n${rawText}`;
 
   try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
+    const response = await hf.chatCompletion({
+      model: model,
+      messages: [{ role: 'user', content: prompt }],
+      max_tokens: 4000
+    });
+
+    const text = response.choices[0].message.content;
 
     const cleanJSON = extractJSON(text);
     const parsed = JSON.parse(cleanJSON);
 
     return parsed;
   } catch (error) {
-    console.error('Gemini API Error Details:', error.message);
+    console.error('Hugging Face API Error Details:', error.message);
     if (error instanceof SyntaxError) {
       throw new Error('LLM_PARSE_ERROR: Failed to parse LLM response as JSON');
     }

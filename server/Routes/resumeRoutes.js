@@ -85,7 +85,7 @@ router.post('/test-upload', authenticate, (req, res) => {
                     message: 'Failed to structure resume data. Please try again.'
                 });
             }
-            if (parseError.message === 'GEMINI_API_KEY is not configured') {
+            if (parseError.message === 'HUGGINGFACE_API_KEY is not configured') {
                 console.error('Config Error:', parseError);
                 return res.status(500).json({
                     success: false,

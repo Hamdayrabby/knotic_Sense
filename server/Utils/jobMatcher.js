@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { HfInference } = require('@huggingface/inference');
 
 /**
  * Extract JSON from LLM response (handles markdown backticks)
@@ -37,21 +37,24 @@ const getVisibilityZone = (score) => {
 };
 
 /**
- * Match resume against job description with weighted scoring
- * @param {Object} resumeStructured - Parsed resume JSON
- * @param {string} jobDescription - Job description text
- * @returns {Promise<Object>} Weighted match analysis result
+ * Generate qualitative LLM feedback based on deterministic match scores
  */
-const matchResumeToJob = async (resumeStructured, jobDescription) => {
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY is not configured');
+const generateMatchFeedback = async (resumeStructured, jobDescription, scoreMetrics) => {
+    if (!process.env.HUGGINGFACE_API_KEY) {
+        throw new Error('HUGGINGFACE_API_KEY is not configured');
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+    const model = process.env.HUGGINGFACE_MODEL || 'meta-llama/Llama-3.3-70B-Instruct';
 
     const matchPrompt = `
-You are an ATS (Applicant Tracking System) Scoring Engine. Your job is to calculate a PRECISE match score between a resume and job description using STRICT weighted criteria.
+You are an Expert ATS AI Advisory Layer. A deterministic JavaScript backend engine has already scored a candidate's resume against a job description.
+Your task is ONLY to provide qualitative, strategic feedback based STRICTLY on the engine's hard metrics. Do not recalculate scores.
+
+DETERMINISTIC METRICS (DO NOT RECALCULATE):
+- Total Score: ${scoreMetrics.totalScore}/100
+- Missing Critical Skills: ${JSON.stringify(scoreMetrics.missingKeywords)}
+- Matched Skills: ${JSON.stringify(scoreMetrics.matchedKeywords.map(k => k.keyword))}
 
 CANDIDATE RESUME:
 ${JSON.stringify(resumeStructured, null, 2)}
@@ -59,119 +62,67 @@ ${JSON.stringify(resumeStructured, null, 2)}
 JOB DESCRIPTION:
 "${jobDescription}"
 
-WEIGHTED SCORING RUBRIC (Total 100%):
-
-1. KEYWORD MATCHING (45% weight):
-   - Find EXACT keyword matches between JD requirements and resume
-   - Prioritize word-for-word matches over synonyms
-   - For EACH keyword match, QUOTE the exact sentence from the resume that proves it
-   - Score: (matched keywords / total required keywords) × 45
-
-2. SKILLS MATCH (25% weight):
-   - Focus on HARD SKILLS and technical tools only
-   - Ignore soft skills for this section
-   - Check skills section, project descriptions, and experience details
-   - Score: (matched skills / required skills) × 25
-
-3. EXPERIENCE ALIGNMENT (15% weight):
-   - Compare years of experience required vs years proven
-   - Check if role titles align with the position
-   - Score based on relevance and duration match
-   - Score: alignment percentage × 15
-
-4. EDUCATION & CERTIFICATIONS (10% weight):
-   - Check if required degree/field matches
-   - Look for relevant certifications mentioned in JD
-   - Score: (matched requirements / total requirements) × 10
-
-5. FORMAT & DATA HEALTH (5% weight):
-   - Deduct points for: missing contact info, missing sections, chaotic structure
-   - Full points if resume is complete and well-structured
-   - Score: health percentage × 5
-
-ROBOTIC DETECTION:
-- If total score >= 95, set roboticFlag: true
-- This indicates possible keyword stuffing
-- Provide advice to make the resume sound more human
-
-STAR RATING PILLARS (for dual-rating):
-Calculate separate scores (0-100) for:
-- Profile: Contact info, summary, links completeness
-- Education: Degree match, certifications
-- Experience: Role relevance, years, achievements
-- Skills: Technical skill coverage
+TASK:
+1. 'phrasingSuggestions': Identify 1-3 bullet points in the resume that could be rewritten to better target the JD.
+2. 'strengths': Write 2-3 DETAILED paragraphs explaining the candidate's strongest alignments with the role.
+3. 'improvements': Write 2-3 DETAILED paragraphs with actionable advice on how to address the 'Missing Critical Skills' or formatting gaps.
+4. 'reasoning': Write a comprehensive 3-5 sentence professional summary evaluating their overall fit based on the deterministic metrics.
 
 RULES:
-- Be STRICT and mathematical
-- QUOTE resume sentences as proof for matches
-- Synonyms count for 50% value of exact matches
-- Output ONLY valid JSON, no markdown
+- Trust the Deterministic Metrics perfectly. Do not claim a skill is matched if it is in the Missing list.
+- Do not output scores or math.
+- Output ONLY valid JSON, no markdown.
 
 OUTPUT JSON SCHEMA:
 {
-  "totalScore": Number (0-100),
-  "scoreBreakdown": {
-    "keywordScore": Number (0-45),
-    "skillsScore": Number (0-25),
-    "experienceScore": Number (0-15),
-    "educationScore": Number (0-10),
-    "formatScore": Number (0-5),
-    "keywords": Number (0-100) // Normalized 0-100 score for UI
-    "profile": Number (0-100),
-    "education": Number (0-100),
-    "experience": Number (0-100),
-    "skills": Number (0-100),
-    "formatting": Number (0-100) // Normalized 0-100 score for UI
-  },
-  "matchedKeywords": [
-    { "keyword": "String", "proofQuote": "String (exact sentence from resume)" }
-  ],
-  "missingKeywords": ["String"],
-  "roboticFlag": Boolean,
   "phrasingSuggestions": [
     { "current": "String", "suggested": "String", "reason": "String" }
   ],
-  "strengths": ["String"],
-  "improvements": ["String"],
-  "reasoning": "String"
+  "strengths": ["String (Detailed paragraph)"],
+  "improvements": ["String (Detailed actionable paragraph)"],
+  "reasoning": "String (Comprehensive summary paragraph)"
 }
-
-Output the JSON object ONLY.
 `;
 
     try {
-        const result = await model.generateContent(matchPrompt);
-        const response = await result.response;
-        const text = response.text();
-
-        const cleanJSON = extractJSON(text);
-        const parsed = JSON.parse(cleanJSON);
-
-        // Validate required fields
-        if (typeof parsed.totalScore !== 'number') {
-            throw new Error('Invalid response structure');
-        }
-
-        // Calculate star rating
-        const starRating = calculateStarRating({
-            profile: parsed.scoreBreakdown?.profile || 0,
-            education: parsed.scoreBreakdown?.education || 0,
-            experience: parsed.scoreBreakdown?.experience || 0,
-            skills: parsed.scoreBreakdown?.skills || 0
+        const response = await hf.chatCompletion({
+            model: model,
+            messages: [{ role: 'user', content: matchPrompt }],
+            max_tokens: 4000
         });
 
-        // Get visibility zone
-        const visibility = getVisibilityZone(parsed.totalScore);
+        const text = response.choices[0].message.content;
 
+        const cleanJSON = extractJSON(text);
+        let parsed = { phrasingSuggestions: [], strengths: [], improvements: [], reasoning: '' };
+
+        try {
+            parsed = JSON.parse(cleanJSON);
+        } catch (e) {
+            console.error("Failed to parse LLM Feedback. Using fallback.", e);
+        }
+
+        // Calculate star rating and UI metadata
+        const starRating = calculateStarRating({
+            profile: scoreMetrics.scoreBreakdown.profile || 0,
+            education: scoreMetrics.scoreBreakdown.education || 0,
+            experience: scoreMetrics.scoreBreakdown.experience || 0,
+            skills: scoreMetrics.scoreBreakdown.skills || 0
+        });
+
+        const visibility = getVisibilityZone(scoreMetrics.totalScore);
+        const roboticFlag = scoreMetrics.roboticFlag || false;
+
+        // Combine the deterministic metrics with the AI feedback into the standard UI schema
         return {
-            score: parsed.totalScore,
+            score: scoreMetrics.totalScore,
             starRating,
             visibility,
-            scoreBreakdown: parsed.scoreBreakdown || {},
-            matchedKeywords: parsed.matchedKeywords || [],
-            missingKeywords: parsed.missingKeywords || [],
-            roboticFlag: parsed.roboticFlag || false,
-            roboticAdvice: parsed.roboticFlag ?
+            scoreBreakdown: scoreMetrics.scoreBreakdown || {},
+            matchedKeywords: scoreMetrics.matchedKeywords || [],
+            missingKeywords: scoreMetrics.missingKeywords || [],
+            roboticFlag,
+            roboticAdvice: roboticFlag ?
                 'Your resume appears over-optimized. Consider making the language more natural to pass human review.' : null,
             phrasingSuggestions: parsed.phrasingSuggestions || [],
             strengths: parsed.strengths || [],
@@ -187,4 +138,4 @@ Output the JSON object ONLY.
     }
 };
 
-module.exports = { matchResumeToJob };
+module.exports = { generateMatchFeedback };

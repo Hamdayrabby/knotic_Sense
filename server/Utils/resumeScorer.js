@@ -1,4 +1,4 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { HfInference } = require('@huggingface/inference');
 
 /**
  * Extract JSON from LLM response (handles markdown backticks)
@@ -28,12 +28,12 @@ const getQualityLevel = (score) => {
  * @returns {Promise<Object>} ATS quality assessment
  */
 const scoreResume = async (resumeStructured) => {
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY is not configured');
+    if (!process.env.HUGGINGFACE_API_KEY) {
+        throw new Error('HUGGINGFACE_API_KEY is not configured');
     }
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const hf = new HfInference(process.env.HUGGINGFACE_API_KEY);
+    const model = process.env.HUGGINGFACE_MODEL || 'meta-llama/Llama-3.3-70B-Instruct';
 
     const scorePrompt = `
 You are a Resume Quality Assessor. Evaluate this resume for GENERAL ATS readiness without any specific job description.
@@ -69,13 +69,14 @@ TASK:
 1. Score each criterion (0-100)
 2. Calculate overall score (average of all)
 3. Suggest 1-3 job roles that match this profile (ANY industry)
-4. List top 3 strengths
-5. List top 3 actionable improvements
-6. Write a 2-sentence professional summary
+4. List top 3 strengths (CRITICAL: Write DETAILED, 2-3 sentence explanations for each strength based on explicit facts present in the data. Do not assume or guess abilities.)
+5. List top 3 actionable improvements (Give specific, actionable advice in detailed 2-3 sentence paragraphs on how to fix formatting or content.)
+6. Write a comprehensive 3-5 sentence professional summary (CRITICAL: Do not hallucinate. Summarize ONLY what is written in the data.)
 
 RULES:
 - Be industry-agnostic (works for tech, healthcare, finance, creative, trades, etc.)
 - Base assessment on resume QUALITY, not field-specific requirements
+- STRICT GROUNDING: If a skill is not in the JSON, they do not have it. Do not invent strengths.
 - Output ONLY valid JSON
 
 OUTPUT JSON SCHEMA:
@@ -88,18 +89,22 @@ OUTPUT JSON SCHEMA:
     "atsReadiness": Number (0-100)
   },
   "suggestedJobs": ["String"],
-  "strengths": ["String"],
-  "improvements": ["String"],
-  "summary": "String"
+  "strengths": ["String (Detailed paragraph)"],
+  "improvements": ["String (Detailed actionable paragraph)"],
+  "summary": "String (Comprehensive summary paragraph)"
 }
 
 Output the JSON object ONLY.
 `;
 
     try {
-        const result = await model.generateContent(scorePrompt);
-        const response = await result.response;
-        const text = response.text();
+        const response = await hf.chatCompletion({
+            model: model,
+            messages: [{ role: 'user', content: scorePrompt }],
+            max_tokens: 4000
+        });
+
+        const text = response.choices[0].message.content;
 
         const cleanJSON = extractJSON(text);
         const parsed = JSON.parse(cleanJSON);
