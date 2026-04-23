@@ -71,3 +71,77 @@ body {
     transform: translateY(0);
   }
 }
+
+/* ─── Landing Page Utilities ─── */
+
+/* Animated gradient text */
+.landing-gradient-text {
+  background: linear-gradient(135deg, #6366f1, #a855f7, #6366f1);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradientShift 4s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% center; }
+  50% { background-position: 200% center; }
+}
+
+/* Glassmorphism card */
+.landing-glass-card {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Fade-up animation (triggered on scroll) */
+.landing-fade-up {
+  animation: landingFadeUp 0.7s ease-out both;
+}
+
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Floating orb animation */
+.landing-float {
+  animation: landingFloat 8s ease-in-out infinite;
+}
+
+.landing-float-delayed {
+  animation: landingFloat 8s ease-in-out 4s infinite;
+}
+
+@keyframes landingFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-20px, 15px) scale(0.95); }
+}
+
+/* Bounce indicator */
+.landing-bounce {
+  animation: landingBounce 2s ease-in-out infinite;
+}
+
+@keyframes landingBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(8px); }
+}
+
+/* Grid background pattern */
+.landing-grid-pattern {
+  background-image:
+    linear-gradient(rgba(99, 102, 241, 0.3) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.3) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
