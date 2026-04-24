@@ -226,7 +226,7 @@ const Resume = () => {
                         className="bg-knotic-accent hover:bg-knotic-hover text-white px-6 py-2 rounded-lg font-semibold flex items-center gap-2 animate-pulse"
                     >
                         {isUploading ? <Loader2 className="animate-spin w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-                        Map & Structure PDF
+                        Analyze CV
                     </button>
                 )}
             </div>
