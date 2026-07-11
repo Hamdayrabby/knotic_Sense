@@ -4,7 +4,7 @@ const upload = require('../Middleware/resumeUpload');
 const { extractTextFromPDF } = require('../Utils/pdfParser');
 const { normalizeResume } = require('../Utils/resumeParser');
 const { authenticate } = require('../Middleware/authMiddleware');
-const User = require('../Models/users');
+const User = require('../Models/User');
 
 // @route   POST /api/resume/test-upload
 // @desc    Upload and parse resume, save to user profile

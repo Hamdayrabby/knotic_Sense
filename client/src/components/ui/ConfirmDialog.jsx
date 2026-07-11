@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
 const ConfirmDialog = ({ isOpen, onClose, onConfirm, title, message, confirmText = 'Delete', isLoading = false }) => {

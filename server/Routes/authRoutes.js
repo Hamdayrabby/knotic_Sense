@@ -12,4 +12,18 @@ router.post('/register', register);
 // @access  Public
 router.post('/login', login);
 
+// @route   POST /api/auth/logout
+// @desc    Logout user (clear httpOnly cookie)
+// @access  Public
+router.post('/logout', (req, res) => {
+  res.cookie('knotic_token', '', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+    expires: new Date(0),
+    path: '/'
+  });
+  res.status(200).json({ success: true, message: 'Logged out successfully' });
+});
+
 module.exports = router;

@@ -34,6 +34,10 @@ const userSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  isSuspended: {
+    type: Boolean,
+    default: false
+  },
   resumeStructured: {
     type: Object,
     default: null

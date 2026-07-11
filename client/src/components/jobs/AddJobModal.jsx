@@ -8,6 +8,8 @@ const AddJobModal = ({ isOpen, onClose, onSubmit }) => {
         position: '',
         description: '',
         jobDescription: '',
+        nextActionDate: '',
+        nextActionNote: '',
         location: 'On-site',
     });
     const [isLoading, setIsLoading] = useState(false);
@@ -23,8 +25,8 @@ const AddJobModal = ({ isOpen, onClose, onSubmit }) => {
         e.preventDefault();
 
         // Validation
-        if (!formData.company.trim() || !formData.position.trim()) {
-            setError('Company and Position are required');
+        if (!formData.company.trim() || !formData.position.trim() || !formData.description.trim()) {
+            setError('Company, Position, and Brief Description are required');
             return;
         }
 
@@ -39,6 +41,8 @@ const AddJobModal = ({ isOpen, onClose, onSubmit }) => {
                 position: '',
                 description: '',
                 jobDescription: '',
+                nextActionDate: '',
+                nextActionNote: '',
                 location: 'On-site',
             });
             onClose();
@@ -49,7 +53,7 @@ const AddJobModal = ({ isOpen, onClose, onSubmit }) => {
         }
     };
 
-    const isValid = formData.company.trim() && formData.position.trim();
+    const isValid = formData.company.trim() && formData.position.trim() && formData.description.trim();
 
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Add New Job">
@@ -110,7 +114,7 @@ const AddJobModal = ({ isOpen, onClose, onSubmit }) => {
                 {/* Brief Description */}
                 <div>
                     <label className="block text-sm font-medium text-knotic-text mb-2">
-                        Brief Description
+                        Brief Description *
                     </label>
                     <input
                         type="text"
@@ -120,6 +124,35 @@ const AddJobModal = ({ isOpen, onClose, onSubmit }) => {
                         placeholder="e.g. Building web apps for search team"
                         className="w-full px-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text placeholder:text-knotic-muted/50 focus:outline-none focus:ring-2 focus:ring-knotic-accent"
                     />
+                </div>
+
+                {/* Next Action */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium text-knotic-text mb-2">
+                            Next Action Date
+                        </label>
+                        <input
+                            type="date"
+                            name="nextActionDate"
+                            value={formData.nextActionDate}
+                            onChange={handleChange}
+                            className="w-full px-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text focus:outline-none focus:ring-2 focus:ring-knotic-accent"
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-knotic-text mb-2">
+                            Next Action
+                        </label>
+                        <input
+                            type="text"
+                            name="nextActionNote"
+                            value={formData.nextActionNote}
+                            onChange={handleChange}
+                            placeholder="e.g. Follow up with recruiter"
+                            className="w-full px-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text placeholder:text-knotic-muted/50 focus:outline-none focus:ring-2 focus:ring-knotic-accent"
+                        />
+                    </div>
                 </div>
 
                 {/* Job Description (JD) */}

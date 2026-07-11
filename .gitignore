@@ -1,3 +1,5 @@
 node_modules
 .env
+server/.env
 STUDY_GUIDE.md
+scripts/

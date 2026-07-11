@@ -1,7 +1,20 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import { createContext, useContext, useState } from 'react';
 import api from '../services/api';
 
 const AuthContext = createContext(null);
+
+const getStoredUser = () => {
+    const savedUser = localStorage.getItem('knotic_user');
+    if (!savedUser) return null;
+
+    try {
+        return JSON.parse(savedUser);
+    } catch {
+        localStorage.removeItem('knotic_user');
+        return null;
+    }
+};
 
 export const useAuth = () => {
     const context = useContext(AuthContext);
@@ -12,40 +25,17 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
-    const [token, setToken] = useState(null);
-    const [loading, setLoading] = useState(true); // Prevents auth flicker
-
-    // Restore session from localStorage on mount
-    useEffect(() => {
-        const savedToken = localStorage.getItem('knotic_token');
-        const savedUser = localStorage.getItem('knotic_user');
-
-        if (savedToken && savedUser) {
-            try {
-                setToken(savedToken);
-                setUser(JSON.parse(savedUser));
-            } catch (err) {
-                // Invalid JSON in localStorage, clear it
-                localStorage.removeItem('knotic_token');
-                localStorage.removeItem('knotic_user');
-            }
-        }
-        setLoading(false);
-    }, []);
+    const [user, setUser] = useState(getStoredUser);
+    const loading = false;
 
     // Login function
     const login = async (email, password) => {
         const response = await api.post('/auth/login', { email, password });
-        // Backend returns { success, message, data: { token, user } }
-        const { token: newToken, user: userData } = response.data.data;
+        // Backend returns { success, message, data: { user, token } }
+        // Token is now set as httpOnly cookie by the server
+        const { user: userData } = response.data.data;
 
-        // Save to state
-        setToken(newToken);
         setUser(userData);
-
-        // Persist to localStorage
-        localStorage.setItem('knotic_token', newToken);
         localStorage.setItem('knotic_user', JSON.stringify(userData));
 
         return response.data;
@@ -54,36 +44,37 @@ export const AuthProvider = ({ children }) => {
     // Register function
     const register = async (name, email, password) => {
         const response = await api.post('/auth/register', { name, email, password });
-        // Backend returns { success, message, data: { token, user } }
-        const { token: newToken, user: userData } = response.data.data;
+        const { user: userData } = response.data.data;
 
-        // Save to state
-        setToken(newToken);
         setUser(userData);
-
-        // Persist to localStorage
-        localStorage.setItem('knotic_token', newToken);
         localStorage.setItem('knotic_user', JSON.stringify(userData));
 
         return response.data;
     };
 
     // Logout function
-    const logout = () => {
+    const logout = async () => {
+        try {
+            await api.post('/auth/logout');
+        } catch {
+            // Even if server call fails, clear local state
+        }
         setUser(null);
-        setToken(null);
-        localStorage.removeItem('knotic_token');
         localStorage.removeItem('knotic_user');
     };
 
     const value = {
         user,
-        token,
         loading,
         login,
         register,
         logout,
-        setUser,
+        setUser: (userData) => {
+            setUser(userData);
+            if (userData) {
+                localStorage.setItem('knotic_user', JSON.stringify(userData));
+            }
+        },
         isAuthenticated: !!user,
     };
 

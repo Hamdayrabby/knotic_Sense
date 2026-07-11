@@ -7,19 +7,8 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    withCredentials: true, // Send httpOnly cookies with every request
 });
-
-// Request interceptor - attach token to every request
-api.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('knotic_token');
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
 
 // Response interceptor - handle 401 (token expired)
 api.interceptors.response.use(
@@ -31,7 +20,6 @@ api.interceptors.response.use(
 
         if (error.response?.status === 401 && !isAuthEndpoint && !isOnAuthPage) {
             // Token expired or invalid - auto logout
-            localStorage.removeItem('knotic_token');
             localStorage.removeItem('knotic_user');
             window.location.href = '/login';
         } else if (error.response?.data?.message) {

@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Loader2, Sparkles, AlertCircle, FileText, CheckCircle2, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Sparkles, AlertCircle, FileText, ChevronDown } from 'lucide-react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
@@ -11,55 +11,11 @@ import ScoreGauge from '../components/job-details/ScoreGauge';
 import KeywordChips from '../components/job-details/KeywordChips';
 import ImprovementPanel from '../components/job-details/ImprovementPanel';
 import NotesEditor from '../components/job-details/NotesEditor';
+import NextActionCard from '../components/job-details/NextActionCard';
+import DetailsSkeleton from '../components/job-details/DetailsSkeleton';
+import ScanningOverlay from '../components/job-details/ScanningOverlay';
 
-// Skeleton Loader
-const DetailsSkeleton = () => (
-    <div className="animate-pulse max-w-7xl mx-auto p-4 lg:p-8 space-y-8">
-        <div className="h-8 bg-knotic-border/50 rounded w-1/3 mb-12"></div>
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-6">
-                <div className="flex gap-4 border-b border-knotic-border pb-2 mb-6">
-                    <div className="h-10 w-40 bg-knotic-border/30 rounded"></div>
-                    <div className="h-10 w-40 bg-knotic-border/30 rounded"></div>
-                </div>
-                <div className="h-48 bg-knotic-border/30 rounded-xl"></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="h-64 bg-knotic-border/30 rounded-xl"></div>
-                    <div className="h-64 bg-knotic-border/30 rounded-xl"></div>
-                </div>
-            </div>
-            <div className="lg:col-span-4">
-                <div className="h-[500px] bg-knotic-border/30 rounded-xl sticky top-6"></div>
-            </div>
-        </div>
-    </div>
-);
-
-// Scanning Animation
-const ScanningOverlay = () => (
-    <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-knotic-bg/80 backdrop-blur-sm"
-    >
-        <div className="relative">
-            <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                className="w-16 h-16 border-4 border-knotic-accent border-t-transparent rounded-full"
-            />
-            <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-knotic-accent" />
-        </div>
-        <motion.p
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="mt-4 text-knotic-accent font-medium tracking-wider"
-        >
-            ANALYZING RESUME MATCH...
-        </motion.p>
-    </motion.div>
-);
+const MotionDiv = motion.div;
 
 const JobDetails = () => {
     const { id } = useParams();
@@ -74,27 +30,21 @@ const JobDetails = () => {
     const resumeHistory = user?.resumes || [];
     const [selectedResumeId, setSelectedResumeId] = useState('');
 
-    useEffect(() => {
-        fetchJobDetails();
-    }, [id]);
-
-    const fetchJobDetails = async () => {
+    const fetchJobDetails = useCallback(async () => {
         try {
-            const response = await api.get('/jobs');
-            const foundJob = response.data.data.find(j => j._id === id);
-
-            if (foundJob) {
-                setJob(foundJob);
-            } else {
-                setError('Job not found');
-            }
+            const response = await api.get(`/jobs/${id}`);
+            setJob(response.data.data);
         } catch (err) {
             console.error('Error fetching job:', err);
-            setError('Failed to load job details');
+            setError(err.response?.data?.message || 'Failed to load job details');
         } finally {
             setIsLoading(false);
         }
-    };
+    }, [id]);
+
+    useEffect(() => {
+        fetchJobDetails();
+    }, [fetchJobDetails]);
 
     const handleSaveNotes = async (newNotes) => {
         try {
@@ -109,6 +59,26 @@ const JobDetails = () => {
             console.error('Failed to save notes:', err);
             toast.error('Failed to save notes');
             // Revert logic could be added here
+        }
+    };
+
+    const handleSaveNextAction = async ({ nextActionDate, nextActionNote }) => {
+        const previousJob = job;
+        const updatedFields = {
+            nextActionDate: nextActionDate || null,
+            nextActionNote
+        };
+
+        setJob(prev => ({ ...prev, ...updatedFields }));
+
+        try {
+            await api.put(`/jobs/${id}`, updatedFields);
+            toast.success('Reminder saved');
+        } catch (err) {
+            setJob(previousJob);
+            console.error('Failed to save reminder:', err);
+            toast.error('Failed to save reminder');
+            throw err;
         }
     };
 
@@ -134,10 +104,6 @@ const JobDetails = () => {
                     timeout: 120000
                 });
             }
-
-            console.log('Analysis response:', response.data);
-            console.log('Cached?', response.data.cached);
-            console.log('New analysis data:', response.data.data);
 
             setJob(prev => ({ ...prev, aiAnalysis: response.data.data }));
 
@@ -199,7 +165,7 @@ const JobDetails = () => {
                 </button>
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-white mb-1">{job.position}</h1>
+                        <h1 className="text-3xl font-bold text-knotic-text mb-1">{job.position}</h1>
                         <p className="text-knotic-muted text-lg">{job.company} • {job.location}</p>
                     </div>
 
@@ -343,7 +309,7 @@ const JobDetails = () => {
                                 {/* Score Breakdown */}
                                 {aiAnalysis ? (
                                     <div className="bg-knotic-card border border-knotic-border rounded-xl p-6">
-                                        <h3 className="text-lg font-semibold text-white mb-6">Match Breakdown</h3>
+                                        <h3 className="text-lg font-semibold text-knotic-text mb-6">Match Breakdown</h3>
                                         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                                             <ScoreGauge score={aiAnalysis.scoreBreakdown?.keywords || 0} label="Keywords" size="sm" />
                                             <ScoreGauge score={aiAnalysis.scoreBreakdown?.skills || 0} label="Skills" size="sm" />
@@ -364,11 +330,11 @@ const JobDetails = () => {
                                 {aiAnalysis && (
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="bg-knotic-card border border-knotic-border rounded-xl p-6">
-                                            <h3 className="text-lg font-semibold text-white mb-4">Improvement Plan</h3>
+                                            <h3 className="text-lg font-semibold text-knotic-text mb-4">Improvement Plan</h3>
                                             <ImprovementPanel analysis={aiAnalysis} />
                                         </div>
                                         <div className="bg-knotic-card border border-knotic-border rounded-xl p-6">
-                                            <h3 className="text-lg font-semibold text-white mb-4">Keyword Gaps</h3>
+                                            <h3 className="text-lg font-semibold text-knotic-text mb-4">Keyword Gaps</h3>
                                             <KeywordChips matched={aiAnalysis.matchedKeywords} missing={aiAnalysis.missingKeywords} />
                                         </div>
                                     </div>
@@ -387,8 +353,14 @@ const JobDetails = () => {
 
                 {/* RIGHT COLUMN: Timeline & Status - Spans 4 cols */}
                 <div className="lg:col-span-4 space-y-6">
+                    <NextActionCard
+                        key={`${job._id}-${job.nextActionDate || ''}-${job.nextActionNote || ''}`}
+                        date={job.nextActionDate}
+                        note={job.nextActionNote}
+                        onSave={handleSaveNextAction}
+                    />
                     <div className="bg-knotic-card border border-knotic-border rounded-xl p-6 sticky top-6">
-                        <h3 className="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                        <h3 className="text-lg font-semibold text-knotic-text mb-6 flex items-center gap-2">
                             Activity Timeline
                         </h3>
                         <Timeline history={job.statusHistory} />

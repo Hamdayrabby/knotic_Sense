@@ -1,0 +1,19 @@
+{
+  "name": "knotic-sense-server",
+  "version": "1.0.0",
+  "description": "Knotic Sense API Server",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+  "dependencies": {
+    "axios": "^1.18.1",
+    "compression": "^1.8.1",
+    "express-mongo-sanitize": "^2.2.0",
+    "express-rate-limit": "^8.5.2",
+    "node-cron": "^4.6.0",
+    "stripe": "^22.3.1"
+  }
+}

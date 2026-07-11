@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
 
+const MotionCircle = motion.circle;
+
 const ScoreGauge = ({ score, label, color = 'text-indigo-500', size = 'md' }) => {
     // Config based on size
     const config = {
@@ -28,7 +30,7 @@ const ScoreGauge = ({ score, label, color = 'text-indigo-500', size = 'md' }) =>
                         className="text-knotic-border"
                     />
                     {/* Progress Circle */}
-                    <motion.circle
+                    <MotionCircle
                         initial={{ strokeDashoffset: circumference }}
                         animate={{ strokeDashoffset: offset }}
                         transition={{ duration: 1.5, ease: "easeOut" }}

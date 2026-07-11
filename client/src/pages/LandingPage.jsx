@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -21,97 +21,12 @@ import {
     Code,
     Database,
     Cpu,
-    FileCheck,
-    Lock
+    FileCheck
 } from 'lucide-react';
 
-/* ───────────────────────────── Intersection Observer Hook ─── */
-const useInView = (options = {}) => {
-    const ref = useRef(null);
-    const [isInView, setIsInView] = useState(false);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(([entry]) => {
-            if (entry.isIntersecting) {
-                setIsInView(true);
-                observer.unobserve(entry.target);
-            }
-        }, { threshold: 0.15, ...options });
-
-        if (ref.current) observer.observe(ref.current);
-        return () => observer.disconnect();
-    }, []);
-
-    return [ref, isInView];
-};
-
-/* ───────────────────────────── Animated Counter ─── */
-const AnimatedCounter = ({ end, suffix = '', duration = 2000 }) => {
-    const [count, setCount] = useState(0);
-    const [ref, isInView] = useInView();
-
-    useEffect(() => {
-        if (!isInView) return;
-        let start = 0;
-        const step = end / (duration / 16);
-        const timer = setInterval(() => {
-            start += step;
-            if (start >= end) {
-                setCount(end);
-                clearInterval(timer);
-            } else {
-                setCount(Math.floor(start));
-            }
-        }, 16);
-        return () => clearInterval(timer);
-    }, [isInView, end, duration]);
-
-    return <span ref={ref}>{count}{suffix}</span>;
-};
-
-/* ───────────────────────────── Feature Card ─── */
-const FeatureCard = ({ icon: Icon, title, description, gradient, delay }) => {
-    const [ref, isInView] = useInView();
-
-    return (
-        <div
-            ref={ref}
-            className={`landing-glass-card group p-8 rounded-2xl transition-all duration-500 hover:scale-[1.03] hover:shadow-2xl ${isInView ? 'landing-fade-up' : 'opacity-0'}`}
-            style={{ animationDelay: `${delay}ms` }}
-        >
-            <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 transition-transform duration-300`}>
-                <Icon className="w-7 h-7 text-white" />
-            </div>
-            <h3 className="text-xl font-bold text-knotic-text mb-3">{title}</h3>
-            <p className="text-knotic-muted leading-relaxed">{description}</p>
-        </div>
-    );
-};
-
-/* ───────────────────────────── Step Card ─── */
-const StepCard = ({ number, icon: Icon, title, description, delay }) => {
-    const [ref, isInView] = useInView();
-
-    return (
-        <div
-            ref={ref}
-            className={`relative text-center ${isInView ? 'landing-fade-up' : 'opacity-0'}`}
-            style={{ animationDelay: `${delay}ms` }}
-        >
-            {/* Step number */}
-            <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-knotic-accent text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-knotic-accent/30 z-10">
-                {number}
-            </div>
-            <div className="landing-glass-card p-8 pt-10 rounded-2xl h-full">
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-knotic-accent/20 to-purple-500/20 flex items-center justify-center mx-auto mb-5">
-                    <Icon className="w-8 h-8 text-knotic-accent" />
-                </div>
-                <h3 className="text-lg font-bold text-knotic-text mb-2">{title}</h3>
-                <p className="text-knotic-muted text-sm leading-relaxed">{description}</p>
-            </div>
-        </div>
-    );
-};
+import AnimatedCounter from '../components/landing/AnimatedCounter';
+import FeatureCard from '../components/landing/FeatureCard';
+import StepCard from '../components/landing/StepCard';
 
 /* ═══════════════════════════════ LANDING PAGE ═══════════════════════════════ */
 const LandingPage = () => {
@@ -387,10 +302,10 @@ const LandingPage = () => {
                                     { icon: Shield, text: 'Get an ATS readiness score before you apply' },
                                     { icon: Zap, text: 'Discover AI-suggested job roles based on your CV' },
                                     { icon: TrendingUp, text: 'Spot missing keywords and skill gaps instantly' },
-                                ].map(({ icon: Ico, text }) => (
+                                ].map(({ icon, text }) => (
                                     <div key={text} className="flex items-center gap-4">
                                         <div className="w-10 h-10 rounded-lg bg-knotic-accent/10 flex items-center justify-center flex-shrink-0">
-                                            <Ico className="w-5 h-5 text-knotic-accent" />
+                                            {createElement(icon, { className: 'w-5 h-5 text-knotic-accent' })}
                                         </div>
                                         <p className="text-knotic-text">{text}</p>
                                     </div>

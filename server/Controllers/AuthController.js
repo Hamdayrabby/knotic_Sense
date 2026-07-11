@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const User = require('../Models/users');
+const User = require('../Models/User');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -68,7 +68,16 @@ const register = async (req, res) => {
     // Generate JWT token
     const token = user.generateToken();
 
-    // Return success response with user data and token
+    // Set httpOnly cookie
+    res.cookie('knotic_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    // Return success response with user data
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
@@ -164,7 +173,16 @@ const login = async (req, res) => {
     // Generate JWT token
     const token = user.generateToken();
 
-    // Return success response with user data and token
+    // Set httpOnly cookie
+    res.cookie('knotic_token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    // Return success response with user data
     res.status(200).json({
       success: true,
       message: 'Login successful',

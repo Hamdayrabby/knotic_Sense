@@ -49,6 +49,15 @@ const jobSchema = new mongoose.Schema({
     appliedDate: {
         type: Date
     },
+    nextActionDate: {
+        type: Date,
+        default: null
+    },
+    nextActionNote: {
+        type: String,
+        trim: true,
+        default: ''
+    },
     notes: {
         type: String,
         default: ''
@@ -107,5 +116,9 @@ jobSchema.pre('save', async function () {
         });
     }
 });
+
+// ── Indexes for query performance ──
+jobSchema.index({ user: 1, updatedAt: -1 }); // Dashboard: list jobs sorted by recent
+jobSchema.index({ user: 1, status: 1 });      // Filter jobs by status
 
 module.exports = mongoose.model('Job', jobSchema);

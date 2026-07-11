@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, Check } from 'lucide-react';
-import { statusConfig } from './StatusBadge';
+import statusConfig from './statusConfig';
 
 const statuses = ['Interested', 'Applied', 'Interviewing', 'Offer', 'Rejected'];
 

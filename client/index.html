@@ -3,9 +3,48 @@
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/png" href="/favicon.png" />
+  <script>
+    (function() {
+      const theme = localStorage.getItem('knotic-theme') || 'system';
+      const root = document.documentElement;
+      if (theme === 'system') {
+        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.add(systemPrefersDark ? 'dark-mode' : 'light-mode');
+      } else {
+        root.classList.add(theme === 'dark' ? 'dark-mode' : 'light-mode');
+      }
+    })();
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Knotic Sense</title>
+
+  <!-- Primary Meta Tags -->
+  <title>Knotic Sense — AI-Powered CV Gap Analysis & Job Tracker</title>
+  <meta name="description" content="Upload your CV, compare it against job descriptions, and find exactly what's missing. AI-powered ATS scoring, gap analysis, and application tracking — all in one place." />
+  <meta name="keywords" content="ATS score, resume checker, CV gap analysis, job tracker, AI resume, job application CRM" />
+  <meta name="author" content="Hamday Rabby Hossain" />
+  <meta name="theme-color" content="#0f172a" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://knotic-sense.vercel.app/" />
+  <meta property="og:title" content="Knotic Sense — AI-Powered CV Gap Analysis" />
+  <meta property="og:description" content="Upload your CV, paste a job description, and discover exactly what to improve. Free forever." />
+  <meta property="og:site_name" content="Knotic Sense" />
+
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:url" content="https://knotic-sense.vercel.app/" />
+  <meta name="twitter:title" content="Knotic Sense — AI-Powered CV Gap Analysis" />
+  <meta name="twitter:description" content="Upload your CV, paste a job description, and discover exactly what to improve. Free forever." />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link rel="apple-touch-icon" href="/favicon.png" />
+
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
 </head>
 
 <body>

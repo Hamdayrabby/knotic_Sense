@@ -4,10 +4,11 @@ import toast from 'react-hot-toast';
 import { Plus, Search, ArrowUpDown, Trash2, Sparkles, Calendar, Building2, Loader2 } from 'lucide-react';
 import api from '../services/api';
 import EmptyState from '../components/jobs/EmptyState';
-import StatusDropdown from '../components/jobs/StatusDropdown';
-import ScoreRing from '../components/jobs/ScoreRing';
 import AddJobModal from '../components/jobs/AddJobModal';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
+import JobsControls from '../components/jobs/JobsControls';
+import JobCard from '../components/jobs/JobCard';
+import JobRow from '../components/jobs/JobRow';
 
 const Jobs = () => {
     const navigate = useNavigate();
@@ -104,11 +105,12 @@ const Jobs = () => {
                     aVal = a.aiAnalysis?.score || 0;
                     bVal = b.aiAnalysis?.score || 0;
                     break;
-                case 'status':
+                case 'status': {
                     const statusOrder = { Interested: 0, Applied: 1, Interviewing: 2, Offer: 3, Rejected: 4 };
                     aVal = statusOrder[a.status] || 0;
                     bVal = statusOrder[b.status] || 0;
                     break;
+                }
                 default:
                     aVal = new Date(a.updatedAt).getTime();
                     bVal = new Date(b.updatedAt).getTime();
@@ -173,98 +175,22 @@ const Jobs = () => {
                 </div>
             ) : (
                 <>
-                    {/* Search and filters */}
-                    <div className="flex items-center gap-4">
-                        <div className="relative flex-1 max-w-md">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-knotic-muted" />
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                placeholder="Search by company or position..."
-                                className="w-full pl-10 pr-4 py-2.5 bg-knotic-card border border-knotic-border rounded-xl text-knotic-text placeholder:text-knotic-muted/50 focus:outline-none focus:ring-2 focus:ring-knotic-accent"
-                            />
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm text-knotic-muted">Sort by:</span>
-                            <button
-                                onClick={() => toggleSort('updatedAt')}
-                                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${sortBy === 'updatedAt'
-                                    ? 'bg-knotic-accent text-white'
-                                    : 'bg-knotic-card text-knotic-muted hover:text-knotic-text'
-                                    }`}
-                            >
-                                Date
-                            </button>
-                            <button
-                                onClick={() => toggleSort('score')}
-                                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${sortBy === 'score'
-                                    ? 'bg-knotic-accent text-white'
-                                    : 'bg-knotic-card text-knotic-muted hover:text-knotic-text'
-                                    }`}
-                            >
-                                Score
-                            </button>
-                            <button
-                                onClick={() => toggleSort('status')}
-                                className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${sortBy === 'status'
-                                    ? 'bg-knotic-accent text-white'
-                                    : 'bg-knotic-card text-knotic-muted hover:text-knotic-text'
-                                    }`}
-                            >
-                                Status
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Mobile Card View */}
+                    <JobsControls
+                        searchQuery={searchQuery}
+                        setSearchQuery={setSearchQuery}
+                        sortBy={sortBy}
+                        toggleSort={toggleSort}
+                    />                    {/* Mobile Card View */}
                     <div className="md:hidden space-y-4">
                         {filteredJobs.map((job) => (
-                            <div
+                            <JobCard
                                 key={job._id}
-                                onClick={() => navigate(`/jobs/${job._id}`)}
-                                className="bg-knotic-card border border-knotic-border rounded-xl p-4 flex flex-col gap-4 active:scale-[0.99] transition-transform"
-                            >
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-bold text-knotic-text text-lg">{job.company}</h3>
-                                        <p className="text-sm text-knotic-muted">{job.position}</p>
-                                    </div>
-                                    <StatusDropdown
-                                        currentStatus={job.status}
-                                        onStatusChange={(status) => handleStatusChange(job._id, status)}
-                                        onClick={(e) => e.stopPropagation()}
-                                    />
-                                </div>
-
-                                <div className="flex items-center justify-between border-t border-knotic-border pt-3">
-                                    <div className="flex items-center gap-2 text-sm text-knotic-muted">
-                                        <Calendar className="w-4 h-4" />
-                                        <span>{formatDate(job.appliedDate || job.createdAt)}</span>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        {job.aiAnalysis?.score && (
-                                            <div className="origin-right">
-                                                <span className={`text-xl font-bold ${job.aiAnalysis.score >= 85 ? 'text-emerald-500' :
-                                                        job.aiAnalysis.score >= 60 ? 'text-amber-500' : 'text-rose-500'
-                                                    }`}>
-                                                    {job.aiAnalysis.score}%
-                                                </span>
-                                            </div>
-                                        )}
-                                        <button
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setDeleteTarget(job._id);
-                                            }}
-                                            className="p-2 text-knotic-muted hover:text-knotic-error transition-colors"
-                                        >
-                                            <Trash2 className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                                job={job}
+                                navigate={navigate}
+                                handleStatusChange={handleStatusChange}
+                                setDeleteTarget={setDeleteTarget}
+                                formatDate={formatDate}
+                            />
                         ))}
                     </div>
 
@@ -301,111 +227,47 @@ const Jobs = () => {
                             </thead>
                             <tbody>
                                 {filteredJobs.map((job) => (
-                                    <tr
+                                    <JobRow
                                         key={job._id}
-                                        onClick={() => navigate(`/jobs/${job._id}`)}
-                                        className="border-b border-knotic-border last:border-b-0 hover:cursor-pointer hover:bg-knotic-card/80 transition-all active:scale-[0.99]"
-                                    >
-                                        {/* Company & Role */}
-                                        <td className="px-6 py-4">
-                                            <div>
-                                                <p className="font-semibold text-knotic-text">{job.company}</p>
-                                                <p className="text-sm text-knotic-muted">{job.position}</p>
-                                            </div>
-                                        </td>
+                                        job={job}
+                                        navigate={navigate}
+                                        handleStatusChange={handleStatusChange}
+                                        handleAnalyze={async (e, targetJob) => {
+                                            e.stopPropagation();
+                                            setAnalyzingIds(prev => new Set(prev).add(targetJob._id));
 
-                                        {/* Applied Date */}
-                                        <td className="px-6 py-4 text-sm text-knotic-muted">
-                                            {formatDate(job.appliedDate || job.createdAt)}
-                                        </td>
+                                            try {
+                                                const res = await api.post(`/jobs/${targetJob._id}/analyze`);
+                                                const analysis = res.data.data;
 
-                                        {/* Status */}
-                                        <td className="px-6 py-4">
-                                            <StatusDropdown
-                                                currentStatus={job.status}
-                                                onStatusChange={(status) => handleStatusChange(job._id, status)}
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        </td>
+                                                setJobs(prev => prev.map(j =>
+                                                    j._id === targetJob._id ? { ...j, aiAnalysis: analysis } : j
+                                                ));
 
-                                        {/* ATS Score */}
-                                        <td className="px-6 py-4">
-                                            <div className="flex justify-center">
-                                                {job.aiAnalysis?.score ? (
-                                                    <span className={`text-xl font-bold ${job.aiAnalysis.score >= 85 ? 'text-emerald-500' :
-                                                            job.aiAnalysis.score >= 60 ? 'text-amber-500' : 'text-rose-500'
-                                                        }`}>
-                                                        {job.aiAnalysis.score}%
-                                                    </span>
-                                                ) : (
-                                                    <button
-                                                        onClick={async (e) => {
-                                                            e.stopPropagation();
-                                                            // Add to loading set
-                                                            setAnalyzingIds(prev => new Set(prev).add(job._id));
-
-                                                            try {
-                                                                const res = await api.post(`/jobs/${job._id}/analyze`);
-                                                                const analysis = res.data.data;
-
-                                                                // Update local state
-                                                                setJobs(prev => prev.map(j =>
-                                                                    j._id === job._id ? { ...j, aiAnalysis: analysis } : j
-                                                                ));
-
-                                                                toast.success('Analysis Complete!');
-                                                            } catch (err) {
-                                                                console.error(err);
-                                                                // If 400 (no resume), prompt to upload
-                                                                if (err.response?.status === 400 && err.response?.data?.message?.includes('resume')) {
-                                                                    toast.error('Please upload a resume first');
-                                                                    navigate('/resume');
-                                                                } else if (err.response?.status === 400 && err.response?.data?.message?.includes('description')) {
-                                                                    toast.error('Add job description first');
-                                                                    navigate(`/jobs/${job._id}`);
-                                                                } else {
-                                                                    toast.error('Analysis Failed');
-                                                                }
-                                                            } finally {
-                                                                setAnalyzingIds(prev => {
-                                                                    const next = new Set(prev);
-                                                                    next.delete(job._id);
-                                                                    return next;
-                                                                });
-                                                            }
-                                                        }}
-                                                        disabled={analyzingIds.has(job._id)}
-                                                        className="text-xs bg-knotic-accent/10 hover:bg-knotic-accent hover:text-white text-knotic-accent px-3 py-1.5 rounded-lg transition-colors font-medium border border-knotic-accent/20 flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
-                                                    >
-                                                        {analyzingIds.has(job._id) ? (
-                                                            <>
-                                                                <Loader2 className="w-3 h-3 animate-spin" />
-                                                                Analyzing...
-                                                            </>
-                                                        ) : (
-                                                            'Analyze'
-                                                        )}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </td>
-
-                                        {/* Actions */}
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center justify-end gap-2">
-                                                <button
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setDeleteTarget(job._id);
-                                                    }}
-                                                    className="p-2 rounded-lg text-knotic-muted hover:text-knotic-error hover:bg-knotic-error/10 transition-colors"
-                                                    title="Delete job"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
+                                                toast.success('Analysis Complete!');
+                                            } catch (err) {
+                                                console.error(err);
+                                                if (err.response?.status === 400 && err.response?.data?.message?.includes('resume')) {
+                                                    toast.error('Please upload a resume first');
+                                                    navigate('/resume');
+                                                } else if (err.response?.status === 400 && err.response?.data?.message?.includes('description')) {
+                                                    toast.error('Add job description first');
+                                                    navigate(`/jobs/${targetJob._id}`);
+                                                } else {
+                                                    toast.error('Analysis Failed');
+                                                }
+                                            } finally {
+                                                setAnalyzingIds(prev => {
+                                                    const next = new Set(prev);
+                                                    next.delete(targetJob._id);
+                                                    return next;
+                                                });
+                                            }
+                                        }}
+                                        analyzingIds={analyzingIds}
+                                        setDeleteTarget={setDeleteTarget}
+                                        formatDate={formatDate}
+                                    />
                                 ))}
                             </tbody>
                         </table>

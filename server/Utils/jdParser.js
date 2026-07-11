@@ -31,6 +31,13 @@ Extract the following information:
 2. Required and nice-to-have skills, tools, and technologies (coreSkills array). Extract AS MANY distinct technical and relevant soft skills as possible (aim for 15-25 if they exist).
 3. Minimum years of experience required (experienceYears). If none specified, use 0. If a range is given, use the minimum.
 4. Required education level (education). If none specified, use 'Not Specified'.
+5. Seniority level of the role (seniorityLevel). Must be one of: "intern", "entry", "mid", "senior", "lead", "executive". Base this on job title keywords, years required, and overall tone:
+   - "intern": internship roles
+   - "entry": junior, associate, graduate, 0-2 years experience
+   - "mid": 2-5 years, no explicit seniority keyword
+   - "senior": senior, 5+ years, staff
+   - "lead": lead, principal, manager, director
+   - "executive": VP, C-level, head of
 
 RULES:
 - Output ONLY valid JSON, no markdown.
@@ -40,7 +47,8 @@ OUTPUT JSON SCHEMA:
   "title": "String",
   "coreSkills": ["String"],
   "experienceYears": Number,
-  "education": "String"
+  "education": "String",
+  "seniorityLevel": "String (one of: intern, entry, mid, senior, lead, executive)"
 }
 `;
 

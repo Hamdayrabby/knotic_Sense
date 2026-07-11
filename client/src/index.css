@@ -1,21 +1,76 @@
 @import "tailwindcss";
 
-/* Knotic Sense - Custom Theme */
+:root {
+  /* Light mode tokens (Default) */
+  --knotic-bg: #f8fafc;
+  --knotic-card: #ffffff;
+  --knotic-accent: #6366f1;
+  --knotic-hover: #4f46e5;
+  --knotic-text: #0f172a;
+  --knotic-muted: #64748b;
+  --knotic-border: #e2e8f0;
+  --knotic-error: #ef4444;
+  --knotic-success: #22c55e;
+  --knotic-card-glass: rgba(255, 255, 255, 0.7);
+  --knotic-border-glass: rgba(226, 232, 240, 0.8);
+}
+
+/* System preferences auto-dark (only applied if not manually overridden) */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light-mode) {
+    --knotic-bg: #0f172a;
+    --knotic-card: #1e293b;
+    --knotic-accent: #6366f1;
+    --knotic-hover: #4f46e5;
+    --knotic-text: #f1f5f9;
+    --knotic-muted: #94a3b8;
+    --knotic-border: #334155;
+    --knotic-card-glass: rgba(30, 41, 59, 0.6);
+    --knotic-border-glass: rgba(51, 65, 85, 0.5);
+  }
+}
+
+/* Explicit manual override selectors */
+.dark-mode {
+  --knotic-bg: #0f172a;
+  --knotic-card: #1e293b;
+  --knotic-accent: #6366f1;
+  --knotic-hover: #4f46e5;
+  --knotic-text: #f1f5f9;
+  --knotic-muted: #94a3b8;
+  --knotic-border: #334155;
+  --knotic-card-glass: rgba(30, 41, 59, 0.6);
+  --knotic-border-glass: rgba(51, 65, 85, 0.5);
+}
+
+.light-mode {
+  --knotic-bg: #f8fafc;
+  --knotic-card: #ffffff;
+  --knotic-accent: #6366f1;
+  --knotic-hover: #4f46e5;
+  --knotic-text: #0f172a;
+  --knotic-muted: #64748b;
+  --knotic-border: #e2e8f0;
+  --knotic-card-glass: rgba(255, 255, 255, 0.7);
+  --knotic-border-glass: rgba(226, 232, 240, 0.8);
+}
+
+/* Knotic Sense - Custom Theme Map */
 @theme {
-  --color-knotic-bg: #0f172a;
-  --color-knotic-card: #1e293b;
-  --color-knotic-accent: #6366f1;
-  --color-knotic-hover: #4f46e5;
-  --color-knotic-text: #f1f5f9;
-  --color-knotic-muted: #94a3b8;
-  --color-knotic-border: #334155;
-  --color-knotic-error: #ef4444;
-  --color-knotic-success: #22c55e;
+  --color-knotic-bg: var(--knotic-bg);
+  --color-knotic-card: var(--knotic-card);
+  --color-knotic-accent: var(--knotic-accent);
+  --color-knotic-hover: var(--knotic-hover);
+  --color-knotic-text: var(--knotic-text);
+  --color-knotic-muted: var(--knotic-muted);
+  --color-knotic-border: var(--knotic-border);
+  --color-knotic-error: var(--knotic-error);
+  --color-knotic-success: var(--knotic-success);
 }
 
 /* Base styles */
 body {
-  @apply bg-knotic-bg text-knotic-text antialiased;
+  @apply bg-knotic-bg text-knotic-text antialiased transition-colors duration-200;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
@@ -33,7 +88,7 @@ body {
   border-radius: 4px;
 }
 
-::webkit-scrollbar-thumb:hover {
+::-webkit-scrollbar-thumb:hover {
   background: var(--color-knotic-muted);
 }
 
@@ -91,8 +146,8 @@ body {
 
 /* Glassmorphism card */
 .landing-glass-card {
-  background: rgba(30, 41, 59, 0.6);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  background: var(--knotic-card-glass);
+  border: 1px solid var(--knotic-border-glass);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
 }

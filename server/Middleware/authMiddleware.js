@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const User = require('../Models/users');
+const User = require('../Models/User');
 
 // @desc    Protect routes - Verify JWT token and authenticate user
 // @access  Private
@@ -7,8 +7,12 @@ const authenticate = async (req, res, next) => {
   try {
     let token;
 
-    // Check for token in Authorization header
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // Check for token in httpOnly cookie first (preferred)
+    if (req.cookies && req.cookies.knotic_token) {
+      token = req.cookies.knotic_token;
+    }
+    // Fallback: check Authorization header (backward compatibility)
+    else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
     }
 
@@ -31,6 +35,14 @@ const authenticate = async (req, res, next) => {
         return res.status(401).json({
           success: false,
           message: 'User not found. Token is invalid.'
+        });
+      }
+
+      // Block suspended users
+      if (user.isSuspended) {
+        return res.status(403).json({
+          success: false,
+          message: 'Your account has been suspended. Please contact support.'
         });
       }
 

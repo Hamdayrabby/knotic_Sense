@@ -1,18 +1,24 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../hooks/useTheme';
 import {
     LayoutDashboard,
     Briefcase,
     FileText,
     LogOut,
-    Sparkles
+    Sparkles,
+    Shield,
+    Settings,
+    X,
+    Sun,
+    Moon,
+    Monitor
 } from 'lucide-react';
-
-import { X } from 'lucide-react';
 
 const Sidebar = ({ isOpen, onClose }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [theme, setTheme] = useTheme();
 
     const handleLogout = () => {
         logout();
@@ -23,7 +29,13 @@ const Sidebar = ({ isOpen, onClose }) => {
         { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
         { to: '/jobs', icon: Briefcase, label: 'Jobs' },
         { to: '/resume', icon: FileText, label: 'Resume' },
+        { to: '/settings', icon: Settings, label: 'Settings' }
     ];
+
+    // Conditionally add admin link for admin users
+    if (user?.role === 'admin') {
+        navItems.push({ to: '/admin', icon: Shield, label: 'Admin' });
+    }
 
     return (
         <aside
@@ -73,10 +85,47 @@ const Sidebar = ({ isOpen, onClose }) => {
                 </ul>
             </nav>
 
-            {/* User & Logout */}
-            <div className="p-4 border-t border-knotic-border">
+            {/* Theme & User & Logout */}
+            <div className="p-4 border-t border-knotic-border space-y-4">
+                {/* Theme Selector */}
+                <div className="flex items-center justify-between bg-knotic-bg border border-knotic-border rounded-xl p-1">
+                    <button
+                        onClick={() => setTheme('light')}
+                        title="Light Mode"
+                        className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-all duration-200 ${
+                            theme === 'light'
+                                ? 'bg-knotic-card text-knotic-accent border border-knotic-border/50 shadow-sm'
+                                : 'text-knotic-muted hover:text-knotic-text'
+                        }`}
+                    >
+                        <Sun className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setTheme('system')}
+                        title="System Preference"
+                        className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-all duration-200 ${
+                            theme === 'system'
+                                ? 'bg-knotic-card text-knotic-accent border border-knotic-border/50 shadow-sm'
+                                : 'text-knotic-muted hover:text-knotic-text'
+                        }`}
+                    >
+                        <Monitor className="w-4 h-4" />
+                    </button>
+                    <button
+                        onClick={() => setTheme('dark')}
+                        title="Dark Mode"
+                        className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-all duration-200 ${
+                            theme === 'dark'
+                                ? 'bg-knotic-card text-knotic-accent border border-knotic-border/50 shadow-sm'
+                                : 'text-knotic-muted hover:text-knotic-text'
+                        }`}
+                    >
+                        <Moon className="w-4 h-4" />
+                    </button>
+                </div>
+
                 {/* User info */}
-                <div className="flex items-center gap-3 px-4 py-3 mb-2">
+                <div className="flex items-center gap-3 px-4 py-2">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-knotic-accent to-purple-500 flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
                             {user?.name?.charAt(0).toUpperCase() || 'U'}

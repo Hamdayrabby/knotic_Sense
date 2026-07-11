@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const { getJobs, createJob, deleteJob, updateJobStatus, updateJob, analyzeJob } = require('../Controllers/JobController');
+const { getJobs, getJob, createJob, deleteJob, updateJobStatus, updateJob, analyzeJob, exportMyJobs } = require('../Controllers/JobController');
 const { authenticate } = require('../Middleware/authMiddleware');
 
 // Configure multer for file uploads
@@ -20,20 +20,28 @@ const upload = multer({
 // All routes are protected
 router.use(authenticate);
 
+const aiLimiter = (req, res, next) => req.app.get('aiLimiter')(req, res, next);
+
 router.route('/')
     .get(getJobs)
     .post(createJob);
 
+router.route('/export')
+    .get(exportMyJobs);
+
 router.route('/:id')
+    .get(getJob)
     .put(updateJob)
     .delete(deleteJob);
 
 router.route('/:id/status')
     .patch(updateJobStatus);
 
-// Analyze route with file upload middleware
+const { checkAiQuota } = require('../Middleware/quotaMiddleware');
+
+// Analyze route with file upload and quota verification middleware
 router.route('/:id/analyze')
-    .post(upload.single('resume'), analyzeJob);
+    .post(aiLimiter, checkAiQuota, upload.single('resume'), analyzeJob);
 
 // Multer error handling
 router.use((err, req, res, next) => {

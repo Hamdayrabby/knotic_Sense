@@ -2,6 +2,8 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { CheckCircle2, Circle, Clock } from 'lucide-react';
 
+const MotionDiv = motion.div;
+
 const statusConfig = {
     Interested: { color: 'bg-blue-500', icon: Circle },
     Applied: { color: 'bg-indigo-500', icon: Clock },
@@ -35,7 +37,7 @@ const Timeline = ({ history = [] }) => {
 
     return (
         <div className="relative pl-4 border-l-2 border-knotic-border space-y-8">
-            <motion.div
+            <MotionDiv
                 variants={container}
                 initial="hidden"
                 animate="show"
@@ -45,7 +47,7 @@ const Timeline = ({ history = [] }) => {
                     const Icon = statusInfo.icon;
 
                     return (
-                        <motion.div key={index} variants={item} className="mb-8 relative last:mb-0">
+                        <MotionDiv key={index} variants={item} className="mb-8 relative last:mb-0">
                             {/* Dot on the line */}
                             <div className={`absolute -left-[21px] top-1 w-4 h-4 rounded-full ${statusInfo.color} border-2 border-knotic-bg shadow-sm z-10`} />
 
@@ -62,10 +64,10 @@ const Timeline = ({ history = [] }) => {
                                     </p>
                                 )}
                             </div>
-                        </motion.div>
+                        </MotionDiv>
                     );
                 })}
-            </motion.div>
+            </MotionDiv>
         </div>
     );
 };

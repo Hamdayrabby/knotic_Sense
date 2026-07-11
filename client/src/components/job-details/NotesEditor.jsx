@@ -1,14 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Save } from 'lucide-react';
 
 const NotesEditor = ({ initialNotes = '', onSave, isSaving }) => {
     const [notes, setNotes] = useState(initialNotes);
     const [hasChanges, setHasChanges] = useState(false);
-
-    useEffect(() => {
-        setNotes(initialNotes);
-        setHasChanges(false);
-    }, [initialNotes]);
 
     const handleChange = (e) => {
         setNotes(e.target.value);

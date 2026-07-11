@@ -23,6 +23,41 @@ const getJobs = async (req, res) => {
     }
 };
 
+// @desc    Get a single job for logged in user
+// @route   GET /api/jobs/:id
+// @access  Private
+const getJob = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found'
+            });
+        }
+
+        const job = await Job.findOne({ _id: req.params.id, user: req.user.id });
+
+        if (!job) {
+            return res.status(404).json({
+                success: false,
+                message: 'Job not found'
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: job
+        });
+    } catch (error) {
+        console.error('Error fetching job:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Server Error',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
 // @desc    Create a new job
 // @route   POST /api/jobs
 // @access  Private
@@ -182,9 +217,8 @@ const updateJobStatus = async (req, res) => {
 // @access  Private
 const analyzeJob = async (req, res) => {
     try {
-        const { matchResumeToJob } = require('../Utils/jobMatcher');
         const { generateContentHash } = require('../Utils/contentHash');
-        const User = require('../Models/users');
+        const User = require('../Models/User');
 
         const job = await Job.findById(req.params.id);
 
@@ -215,12 +249,6 @@ const analyzeJob = async (req, res) => {
         let resumeHash;
         let newResumeId = null;
         let updatedHistory = null;
-
-        // DEBUG: Log if file was received
-        console.log('[ANALYZE] req.file exists?', !!req.file);
-        if (req.file) {
-            console.log('[ANALYZE] File details:', req.file.originalname, req.file.size, 'bytes');
-        }
 
         // Check if file was uploaded
         if (req.file) {
@@ -343,6 +371,12 @@ const analyzeJob = async (req, res) => {
 
         await job.save();
 
+        // Increment subscription counter for new (non-cached) analysis calls
+        if (req.subscription) {
+            req.subscription.aiAnalysesUsedThisMonth += 1;
+            await req.subscription.save();
+        }
+
         res.status(200).json({
             success: true,
             cached: false,
@@ -397,6 +431,8 @@ const updateJob = async (req, res) => {
             location,
             salary,
             appliedDate,
+            nextActionDate,
+            nextActionNote,
             jobDescription,
             notes
         } = req.body;
@@ -409,6 +445,8 @@ const updateJob = async (req, res) => {
         if (location) updateFields.location = location;
         if (salary) updateFields.salary = salary;
         if (appliedDate) updateFields.appliedDate = appliedDate;
+        if (nextActionDate !== undefined) updateFields.nextActionDate = nextActionDate || null;
+        if (nextActionNote !== undefined) updateFields.nextActionNote = nextActionNote;
         if (jobDescription) updateFields.jobDescription = jobDescription;
         if (notes !== undefined) updateFields.notes = notes; // Allow empty string
 
@@ -433,11 +471,52 @@ const updateJob = async (req, res) => {
     }
 };
 
+// @desc    Export user's jobs to CSV
+// @route   GET /api/jobs/export
+// @access  Private
+const exportMyJobs = async (req, res) => {
+    try {
+        const jobs = await Job.find({ user: req.user.id })
+            .select('company position status aiAnalysis.score nextActionDate nextActionNote createdAt')
+            .sort({ createdAt: -1 })
+            .lean();
+
+        const headers = ['Company', 'Position', 'Status', 'ATS Score', 'Next Action Date', 'Next Action Note', 'Created'];
+        
+        const escape = (v) => {
+            if (v == null) return '';
+            const s = String(v).replace(/"/g, '""');
+            return /[",\n]/.test(s) ? `"${s}"` : s;
+        };
+
+        const rows = jobs.map(j => [
+            j.company,
+            j.position,
+            j.status,
+            j.aiAnalysis?.score ?? '',
+            j.nextActionDate ? new Date(j.nextActionDate).toISOString().slice(0, 10) : '',
+            j.nextActionNote || '',
+            new Date(j.createdAt).toISOString().slice(0, 10)
+        ]);
+
+        const csv = [headers.join(','), ...rows.map(r => r.map(escape).join(','))].join('\n');
+
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="my_job_applications.csv"');
+        res.send(csv);
+    } catch (error) {
+        console.error('Error exporting jobs:', error);
+        res.status(500).json({ success: false, message: 'Failed to export jobs' });
+    }
+};
+
 module.exports = {
     getJobs,
+    getJob,
     createJob,
     deleteJob,
     updateJobStatus,
     updateJob,
-    analyzeJob
+    analyzeJob,
+    exportMyJobs
 };

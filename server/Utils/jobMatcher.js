@@ -15,25 +15,27 @@ const extractJSON = (text) => {
  * Calculate star rating from percentage score
  */
 const calculateStarRating = (scoreBreakdown) => {
-    const { profile, education, experience, skills } = scoreBreakdown;
-    // Each pillar contributes to max 1.25 stars (total 5 stars)
+    const { skills, experience, education, quality, formatting } = scoreBreakdown;
+    // 5 pillars, each contributes to max 1 star (total 5 stars)
     const stars = (
-        (profile / 100) * 1.25 +
-        (education / 100) * 1.25 +
-        (experience / 100) * 1.25 +
-        (skills / 100) * 1.25
+        ((skills || 0) / 100) * 1.0 +
+        ((experience || 0) / 100) * 1.0 +
+        ((education || 0) / 100) * 1.0 +
+        ((quality || 0) / 100) * 1.0 +
+        ((formatting || 0) / 100) * 1.0
     );
     return Math.round(stars * 10) / 10; // Round to 1 decimal
 };
 
 /**
- * Determine visibility zone from score
+ * Determine visibility zone from score (calibrated for realistic distribution)
  */
 const getVisibilityZone = (score) => {
-    if (score >= 90) return { zone: 'Very High', description: 'High likelihood of recruiter visibility' };
-    if (score >= 75) return { zone: 'Good/Excellent', description: 'Ideal Zone - optimized but natural' };
-    if (score >= 60) return { zone: 'Borderline', description: 'Maybe zone - depends on candidate pool size' };
-    return { zone: 'Low', description: 'High risk of automatic rejection' };
+    if (score >= 80) return { zone: 'Excellent', description: 'Top-tier match — very high recruiter visibility' };
+    if (score >= 65) return { zone: 'Strong', description: 'Competitive match — likely to pass ATS filters' };
+    if (score >= 50) return { zone: 'Moderate', description: 'Borderline — may pass depending on applicant pool' };
+    if (score >= 35) return { zone: 'Weak', description: 'Below average — significant gaps to address' };
+    return { zone: 'Low', description: 'Poor match — major alignment issues with this role' };
 };
 
 /**
@@ -104,10 +106,11 @@ OUTPUT JSON SCHEMA:
 
         // Calculate star rating and UI metadata
         const starRating = calculateStarRating({
-            profile: scoreMetrics.scoreBreakdown.profile || 0,
-            education: scoreMetrics.scoreBreakdown.education || 0,
+            skills: scoreMetrics.scoreBreakdown.skills || 0,
             experience: scoreMetrics.scoreBreakdown.experience || 0,
-            skills: scoreMetrics.scoreBreakdown.skills || 0
+            education: scoreMetrics.scoreBreakdown.education || 0,
+            quality: scoreMetrics.scoreBreakdown.quality || 0,
+            formatting: scoreMetrics.scoreBreakdown.formatting || 0
         });
 
         const visibility = getVisibilityZone(scoreMetrics.totalScore);
