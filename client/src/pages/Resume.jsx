@@ -9,6 +9,9 @@ import ResumeUploader from '../components/resume/ResumeUploader';
 import ResumeHistory from '../components/resume/ResumeHistory';
 import CandidateProfile from '../components/resume/CandidateProfile';
 import AtsReadiness from '../components/resume/AtsReadiness';
+import PDFViewerModal from '../components/ui/PDFViewerModal';
+import ResumePDF from '../components/resume/ResumePDF';
+import { FileText } from 'lucide-react';
 
 const MotionDiv = motion.div;
 
@@ -19,6 +22,8 @@ const Resume = () => {
     const [isCalculating, setIsCalculating] = useState(false);
     const [activeTab, setActiveTab] = useState('overview'); // overview, skills, experience, education
     const [activeResumeId, setActiveResumeId] = useState(null); // Track which resume is currently selected
+    const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
+    const [viewHistoryResume, setViewHistoryResume] = useState(null);
 
     // Resume Data Access
     const resumeData = user?.resumeStructured || null;
@@ -67,10 +72,9 @@ const Resume = () => {
     };
 
     const handleSelectResume = (resume) => {
-        // Set this resume as the "active" one in the view
-        const updatedUser = { ...user, resumeStructured: resume.structured };
-        setUser(updatedUser);
-        setActiveResumeId(resume._id);
+        // Just view the historical CV, do not edit the current active CV
+        setViewHistoryResume(resume.structured);
+        setIsPdfModalOpen(true);
     };
 
     const handleFileChange = (e) => {
@@ -206,6 +210,16 @@ const Resume = () => {
                         {file ? file.name : 'Update Resume'}
                     </button>
                 </div>
+                
+                {resumeData && (
+                    <button 
+                        onClick={() => setIsPdfModalOpen(true)}
+                        className="bg-knotic-card hover:bg-knotic-border border border-knotic-border text-knotic-text px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                    >
+                        <FileText className="w-4 h-4 text-purple-500" />
+                        View / Export PDF
+                    </button>
+                )}
                 {file && (
                     <button
                         onClick={handleUpload}
@@ -402,6 +416,16 @@ const Resume = () => {
                     </div>
                 </div>
             </div>
+
+            <PDFViewerModal
+                isOpen={isPdfModalOpen}
+                onClose={() => {
+                    setIsPdfModalOpen(false);
+                    setTimeout(() => setViewHistoryResume(null), 300); // Clear after animation
+                }}
+                title="Resume PDF Viewer"
+                document={<ResumePDF data={viewHistoryResume || resumeData} />}
+            />
         </div>
     );
 };

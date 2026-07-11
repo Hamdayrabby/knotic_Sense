@@ -3,3 +3,12 @@ node_modules
 server/.env
 STUDY_GUIDE.md
 scripts/
+
+# Local planning, documentation, and agent folders
+docs/
+.agents/
+implementation_plan.md
+walkthrough.md
+task.md
+*.log
+

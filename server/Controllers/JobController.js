@@ -510,6 +510,44 @@ const exportMyJobs = async (req, res) => {
     }
 };
 
+// @desc    Generate a cover letter for a specific job
+// @route   POST /api/jobs/:id/cover-letter
+// @access  Private
+const generateJobCoverLetter = async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(404).json({ success: false, message: 'Job not found' });
+        }
+
+        const job = await Job.findOne({ _id: req.params.id, user: req.user.id });
+        if (!job) {
+            return res.status(404).json({ success: false, message: 'Job not found' });
+        }
+
+        if (!job.resumeStructured || !job.description) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Job must be analyzed first to extract structured resume data.' 
+            });
+        }
+
+        const { generateCoverLetter } = require('../Utils/aiCoverLetterService');
+        const coverLetter = await generateCoverLetter(job.resumeStructured, job.description);
+
+        res.status(200).json({
+            success: true,
+            data: { coverLetter }
+        });
+    } catch (error) {
+        console.error('Error generating cover letter:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate cover letter',
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
+    }
+};
+
 module.exports = {
     getJobs,
     getJob,
@@ -518,5 +556,6 @@ module.exports = {
     updateJobStatus,
     updateJob,
     analyzeJob,
-    exportMyJobs
+    exportMyJobs,
+    generateJobCoverLetter
 };

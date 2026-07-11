@@ -14,6 +14,7 @@ import NotesEditor from '../components/job-details/NotesEditor';
 import NextActionCard from '../components/job-details/NextActionCard';
 import DetailsSkeleton from '../components/job-details/DetailsSkeleton';
 import ScanningOverlay from '../components/job-details/ScanningOverlay';
+import DocumentViewerModal from '../components/ui/DocumentViewerModal';
 
 const MotionDiv = motion.div;
 
@@ -25,6 +26,10 @@ const JobDetails = () => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('overview'); // overview, notes
+
+    const [isCoverLetterModalOpen, setIsCoverLetterModalOpen] = useState(false);
+    const [coverLetterContent, setCoverLetterContent] = useState('');
+    const [isGeneratingCoverLetter, setIsGeneratingCoverLetter] = useState(false);
 
     const { user, setUser } = useAuth();
     const resumeHistory = user?.resumes || [];
@@ -125,6 +130,22 @@ const JobDetails = () => {
             toast.error(err.response?.data?.message || err.message, { id: 'reanalyze' });
         } finally {
             setIsAnalyzing(false);
+        }
+    };
+
+    const handleGenerateCoverLetter = async () => {
+        try {
+            setIsGeneratingCoverLetter(true);
+            toast.loading('Drafting cover letter with AI...', { id: 'cover-letter' });
+            const response = await api.post(`/jobs/${id}/cover-letter`);
+            setCoverLetterContent(response.data.data.coverLetter);
+            setIsCoverLetterModalOpen(true);
+            toast.success('Cover letter generated!', { id: 'cover-letter' });
+        } catch (err) {
+            console.error('Failed to generate cover letter:', err);
+            toast.error(err.response?.data?.message || 'Failed to generate cover letter', { id: 'cover-letter' });
+        } finally {
+            setIsGeneratingCoverLetter(false);
         }
     };
 
@@ -249,6 +270,13 @@ const JobDetails = () => {
                                 >
                                     <Sparkles className="w-4 h-4" /> Re-Analyze
                                 </button>
+                                <button
+                                    onClick={handleGenerateCoverLetter}
+                                    disabled={isGeneratingCoverLetter}
+                                    className="bg-knotic-card hover:bg-knotic-border border border-knotic-border text-white px-4 py-2 rounded-lg font-semibold flex items-center gap-2 transition-all h-12 disabled:opacity-50"
+                                >
+                                    <FileText className="w-4 h-4" /> {isGeneratingCoverLetter ? 'Drafting...' : 'Generate Cover Letter'}
+                                </button>
                                 <div className={`px-5 py-2 rounded-xl border ${visibilityColor} flex items-center gap-3 h-12`}>
                                     <ScoreGauge score={score} size="sm" color={score >= 85 ? 'text-emerald-500' : score >= 60 ? 'text-amber-500' : 'text-rose-500'} />
                                     <div>
@@ -368,6 +396,13 @@ const JobDetails = () => {
                 </div>
 
             </div>
+
+            <DocumentViewerModal
+                isOpen={isCoverLetterModalOpen}
+                onClose={() => setIsCoverLetterModalOpen(false)}
+                title="AI Generated Cover Letter"
+                content={coverLetterContent}
+            />
         </div>
     );
 };

@@ -1,4 +1,4 @@
-import { List, XCircle } from 'lucide-react';
+import { List, XCircle, Eye } from 'lucide-react';
 
 const ResumeHistory = ({ resumeHistory, resumeData, handleSelectResume, handleDeleteResume }) => {
     return (
@@ -31,13 +31,25 @@ const ResumeHistory = ({ resumeHistory, resumeData, handleSelectResume, handleDe
                                         {new Date(resume.uploadedAt).toLocaleDateString()}
                                     </p>
                                 </div>
-                                <button
-                                    onClick={(e) => handleDeleteResume(resume._id, e)}
-                                    className="absolute top-3 right-3 text-knotic-muted hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                                    title="Delete"
-                                >
-                                    <XCircle className="w-4 h-4" />
-                                </button>
+                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleSelectResume(resume); // This will now just trigger the view modal
+                                        }}
+                                        className="p-2 text-knotic-muted hover:text-knotic-accent transition-colors"
+                                        title="View CV"
+                                    >
+                                        <Eye className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={(e) => handleDeleteResume(resume._id, e)}
+                                        className="p-2 text-knotic-muted hover:text-red-500 transition-colors"
+                                        title="Delete"
+                                    >
+                                        <XCircle className="w-4 h-4" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     );
