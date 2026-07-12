@@ -158,6 +158,7 @@ const Settings = () => {
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             required
+                                            autocomplete="name"
                                             className="w-full pl-10 pr-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text focus:outline-none focus:ring-2 focus:ring-knotic-accent focus:border-transparent transition-all"
                                         />
                                     </div>
@@ -172,6 +173,7 @@ const Settings = () => {
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             required
+                                            autocomplete="email"
                                             className="w-full pl-10 pr-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text focus:outline-none focus:ring-2 focus:ring-knotic-accent focus:border-transparent transition-all"
                                         />
                                     </div>
@@ -205,6 +207,7 @@ const Settings = () => {
                                             value={currentPassword}
                                             onChange={(e) => setCurrentPassword(e.target.value)}
                                             required
+                                            autocomplete="current-password"
                                             className="w-full pl-10 pr-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text focus:outline-none focus:ring-2 focus:ring-knotic-accent focus:border-transparent transition-all"
                                         />
                                     </div>
@@ -221,6 +224,7 @@ const Settings = () => {
                                                 onChange={(e) => setNewPassword(e.target.value)}
                                                 required
                                                 minLength={6}
+                                                autocomplete="new-password"
                                                 className="w-full pl-10 pr-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text focus:outline-none focus:ring-2 focus:ring-knotic-accent focus:border-transparent transition-all"
                                             />
                                         </div>
@@ -235,6 +239,7 @@ const Settings = () => {
                                                 onChange={(e) => setConfirmPassword(e.target.value)}
                                                 required
                                                 minLength={6}
+                                                autocomplete="new-password"
                                                 className="w-full pl-10 pr-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text focus:outline-none focus:ring-2 focus:ring-knotic-accent focus:border-transparent transition-all"
                                             />
                                         </div>

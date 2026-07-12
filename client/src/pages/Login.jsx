@@ -61,6 +61,7 @@ const Login = () => {
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="you@example.com"
                                     required
+                                    autocomplete="email"
                                     className="w-full pl-10 pr-4 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text placeholder:text-knotic-muted/50 focus:outline-none focus:ring-2 focus:ring-knotic-accent focus:border-transparent transition-all duration-200"
                                 />
                             </div>
@@ -80,6 +81,7 @@ const Login = () => {
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="••••••••"
                                     required
+                                    autocomplete="current-password"
                                     className="w-full pl-10 pr-11 py-3 bg-knotic-bg border border-knotic-border rounded-xl text-knotic-text placeholder:text-knotic-muted/50 focus:outline-none focus:ring-2 focus:ring-knotic-accent focus:border-transparent transition-all duration-200"
                                 />
                                 <button
