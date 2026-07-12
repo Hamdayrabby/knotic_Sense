@@ -128,7 +128,7 @@ const Sidebar = ({ isOpen, onClose }) => {
                 <div className="flex items-center gap-3 px-4 py-2">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-knotic-accent to-purple-500 flex items-center justify-center">
                         <span className="text-white font-semibold text-sm">
-                            {user?.name?.charAt(0).toUpperCase() || 'U'}
+                            {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
                         </span>
                     </div>
                     <div className="flex-1 min-w-0">

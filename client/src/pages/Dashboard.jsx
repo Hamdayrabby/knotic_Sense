@@ -78,7 +78,7 @@ const Dashboard = () => {
             {/* Header */}
             <div>
                 <h1 className="text-3xl font-bold text-knotic-text">
-                    Welcome back, {user?.name?.split(' ')[0]}! 👋
+                    Welcome back, {user?.name ? user.name.split(' ')[0] : 'User'}! 👋
                 </h1>
                 <p className="text-knotic-muted mt-2">
                     Here's an overview of your job search progress

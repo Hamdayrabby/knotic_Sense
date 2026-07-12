@@ -99,37 +99,42 @@ const styles = StyleSheet.create({
         marginRight: 6,
         marginBottom: 4,
     },
-    summaryText: {
-        fontSize: 10,
-        textAlign: 'justify',
-    }
 });
 
 const ResumePDF = ({ data }) => {
     if (!data) return <Document><Page size="A4" /></Document>;
 
-    const { personalInfo, summary, experience, education, skills } = data;
+    const { candidate, education, experience, projects, skills, activities, certifications } = data;
+
+    // Helper to get flat skills array
+    let allSkills = [];
+    if (skills) {
+        if (Array.isArray(skills)) {
+            allSkills = skills;
+        } else {
+            allSkills = [
+                ...(skills.technical || []),
+                ...(skills.tools || []),
+                ...(skills.domain || []),
+                ...(skills.soft || [])
+            ];
+        }
+    }
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
                 {/* Header Section */}
                 <View style={styles.header}>
-                    <Text style={styles.name}>{personalInfo?.name || 'Professional Resume'}</Text>
+                    <Text style={styles.name}>{candidate?.name || 'Professional Resume'}</Text>
                     <View style={styles.contactInfo}>
-                        {personalInfo?.email && <Text style={styles.contactItem}>{personalInfo.email}</Text>}
-                        {personalInfo?.phone && <Text style={styles.contactItem}>{personalInfo.phone}</Text>}
-                        {personalInfo?.location && <Text style={styles.contactItem}>{personalInfo.location}</Text>}
+                        {candidate?.email && <Text style={styles.contactItem}>{candidate.email}</Text>}
+                        {candidate?.phone && <Text style={styles.contactItem}>{candidate.phone}</Text>}
+                        {candidate?.links && candidate.links.map((link, i) => (
+                            <Text key={i} style={styles.contactItem}>{link}</Text>
+                        ))}
                     </View>
                 </View>
-
-                {/* Summary Section */}
-                {summary && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Professional Summary</Text>
-                        <Text style={styles.summaryText}>{summary}</Text>
-                    </View>
-                )}
 
                 {/* Experience Section */}
                 {experience && experience.length > 0 && (
@@ -138,14 +143,40 @@ const ResumePDF = ({ data }) => {
                         {experience.map((exp, index) => (
                             <View key={index} style={styles.contentBlock}>
                                 <View style={styles.row}>
-                                    <Text style={styles.title}>{exp.title}</Text>
-                                    <Text style={styles.date}>{exp.dates}</Text>
+                                    <Text style={styles.title}>{exp.role}</Text>
+                                    <Text style={styles.date}>{exp.duration}</Text>
                                 </View>
                                 <Text style={styles.subtitle}>{exp.company}</Text>
-                                {exp.description && (
+                                {exp.details && exp.details.length > 0 && (
                                     <View style={{ marginTop: 4 }}>
-                                        {/* Simple bullet splitting by newline or sentences */}
-                                        {exp.description.split('\n').filter(b => b.trim()).map((bullet, i) => (
+                                        {exp.details.map((bullet, i) => (
+                                            <View key={i} style={styles.bulletPoint}>
+                                                <Text style={styles.bulletIcon}>•</Text>
+                                                <Text style={styles.bulletText}>{bullet.replace(/^[•\-\*]\s*/, '').trim()}</Text>
+                                            </View>
+                                        ))}
+                                    </View>
+                                )}
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {/* Projects Section */}
+                {projects && projects.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Projects</Text>
+                        {projects.map((proj, index) => (
+                            <View key={index} style={styles.contentBlock}>
+                                <View style={styles.row}>
+                                    <Text style={styles.title}>{proj.title}</Text>
+                                </View>
+                                {proj.tech && proj.tech.length > 0 && (
+                                    <Text style={styles.subtitle}>Technologies: {proj.tech.join(', ')}</Text>
+                                )}
+                                {proj.description && proj.description.length > 0 && (
+                                    <View style={{ marginTop: 4 }}>
+                                        {proj.description.map((bullet, i) => (
                                             <View key={i} style={styles.bulletPoint}>
                                                 <Text style={styles.bulletIcon}>•</Text>
                                                 <Text style={styles.bulletText}>{bullet.replace(/^[•\-\*]\s*/, '').trim()}</Text>
@@ -165,21 +196,52 @@ const ResumePDF = ({ data }) => {
                         {education.map((edu, index) => (
                             <View key={index} style={styles.contentBlock}>
                                 <View style={styles.row}>
-                                    <Text style={styles.title}>{edu.degree || edu.degreeName}</Text>
-                                    <Text style={styles.date}>{edu.year || edu.endDate || edu.dates}</Text>
+                                    <Text style={styles.title}>{edu.degree} {edu.field ? `in ${edu.field}` : ''}</Text>
+                                    <Text style={styles.date}>{[edu.start, edu.end].filter(Boolean).join(' - ')}</Text>
                                 </View>
-                                <Text style={styles.subtitle}>{edu.institution || edu.school}</Text>
+                                <View style={styles.row}>
+                                    <Text style={styles.subtitle}>{edu.institution}</Text>
+                                    {edu.gpa && <Text style={styles.date}>GPA: {edu.gpa}</Text>}
+                                </View>
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {/* Activities Section */}
+                {activities && activities.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Leadership & Activities</Text>
+                        {activities.map((act, index) => (
+                            <View key={index} style={styles.contentBlock}>
+                                <View style={styles.row}>
+                                    <Text style={styles.title}>{act.role}</Text>
+                                    <Text style={styles.date}>{act.duration}</Text>
+                                </View>
+                                <Text style={styles.subtitle}>{act.organization}</Text>
                             </View>
                         ))}
                     </View>
                 )}
 
                 {/* Skills Section */}
-                {skills && skills.length > 0 && (
+                {allSkills && allSkills.length > 0 && (
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Technical Skills</Text>
                         <View style={styles.skillsContainer}>
-                            <Text style={styles.skillItem}>{skills.join(' • ')}</Text>
+                            <Text style={styles.skillItem}>{allSkills.join(' • ')}</Text>
+                        </View>
+                    </View>
+                )}
+
+                {/* Certifications */}
+                {certifications && certifications.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Certifications</Text>
+                        <View style={styles.skillsContainer}>
+                            {certifications.map((cert, index) => (
+                                <Text key={index} style={styles.skillItem}>• {cert}</Text>
+                            ))}
                         </View>
                     </View>
                 )}
